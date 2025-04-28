@@ -122,15 +122,19 @@ const TabBar = ({ state, descriptors, navigation }) => {
             >
             {route.name === 'Profile' ? (
               user.avatar ? (
-                <Image 
-                  source={{ uri: user.avatar }} 
-                  style={styles.profileImage} 
-                />
+                <View style={styles.profileImageContainer}>
+                  <Image 
+                    source={{ uri: user.avatar }} 
+                    style={styles.profileImage} 
+                  />
+                </View>
               ) : (
-                <View style={styles.profilePlaceholder}>
-                  <Text style={styles.profileInitial}>
-                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                  </Text>
+                <View style={styles.profileImageContainer}>
+                  <View style={styles.profilePlaceholder}>
+                    <Text style={styles.profileInitial}>
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </Text>
+                  </View>
                 </View>
               )
             ) : (
@@ -144,6 +148,7 @@ const TabBar = ({ state, descriptors, navigation }) => {
                       ? theme.colors.primary
                       : theme.colors.textLight
                 }
+                style={route.name === 'Add' ? styles.addIcon : null}
               />
             )}
             <Text
@@ -223,12 +228,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: 'white',
-    // Add outer border effect
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 3,
-    elevation: 3,
+    // Add container for outer border
+    overflow: 'visible',
+  },
+  profileImageContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profilePlaceholder: {
     width: 24,
@@ -239,17 +249,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'white',
-    // Add outer border effect
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 3,
-    elevation: 3,
+    // Add container for outer border
+    overflow: 'visible',
   },
   profileInitial: {
     fontSize: 12,
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.primary,
+  },
+  addIcon: {
+    marginTop: 0,
+    alignSelf: 'center',
   },
 });
 
