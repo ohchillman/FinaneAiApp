@@ -254,7 +254,8 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     marginVertical: theme.spacing.md,
-    alignItems: 'center', // Keep the centering from local change
+    alignItems: 'flex-start', // Align to start for proper chart positioning
+    width: '100%', // Ensure container takes full width
   },
   // Use timeFilter naming convention from remote
   timeFilterContainer: {
@@ -262,6 +263,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: theme.spacing.md,
     width: '100%', // Ensure the filter takes full width
+    paddingHorizontal: theme.spacing.sm, // Add padding for better alignment with chart
   },
   timeFilterOption: {
     paddingVertical: theme.spacing.xs,

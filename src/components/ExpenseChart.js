@@ -4,7 +4,11 @@ import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import theme from '../theme';
 
-const screenWidth = Dimensions.get('window').width - 32; // Accounting for margins
+// Calculate screen width dynamically for better responsiveness
+const getScreenWidth = () => {
+  const width = Dimensions.get('window').width;
+  return width - (theme.spacing.lg * 2); // Account for container padding
+};
 
 const ExpenseChart = ({ 
   data = {
@@ -15,7 +19,7 @@ const ExpenseChart = ({
       },
     ],
   },
-  height = 200,
+  height = 220, // Increased height for better visualization
   style = {},
 }) => {
   const chartConfig = {
@@ -35,8 +39,15 @@ const ExpenseChart = ({
       stroke: theme.colors.chartGrid,
       strokeDasharray: '',
     },
+    strokeWidth: 3, // Increased stroke width for better visibility
+    fillShadowGradientFrom: theme.colors.primary,
+    fillShadowGradientTo: theme.colors.background,
+    fillShadowGradientOpacity: 0.1,
   };
 
+  // Get current screen width for responsive rendering
+  const screenWidth = getScreenWidth();
+  
   return (
     <View style={[styles.container, style]}>
       <LineChart
@@ -46,11 +57,13 @@ const ExpenseChart = ({
         chartConfig={chartConfig}
         bezier
         withInnerLines={false}
-        withOuterLines={true}
+        withOuterLines={false} // Removed outer lines for cleaner look
         withHorizontalLabels={false}
         withVerticalLabels={false}
         withDots={false}
         style={styles.chart}
+        withShadow={false} // Disable default shadow
+        segments={4} // Reduce number of segments for smoother appearance
       />
     </View>
   );
@@ -58,10 +71,17 @@ const ExpenseChart = ({
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%', // Ensure container takes full width
+    alignItems: 'flex-start', // Align to start instead of center
     marginVertical: theme.spacing.md,
+    paddingBottom: theme.spacing.md, // Add padding at bottom for time filter
   },
   chart: {
     borderRadius: theme.borderRadius.md,
+    paddingRight: 0, // Remove default padding
+    paddingLeft: 0,
+    marginLeft: 0, // Reset margin for proper alignment
+    marginRight: 0,
   },
 });
 
