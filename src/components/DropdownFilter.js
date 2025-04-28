@@ -16,14 +16,17 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
   const contentHeight = Math.min(options.length * 44, maxHeight);
 
   useEffect(() => {
-    // Animation for opening/closing dropdown
+    // Separate JS and native animations to avoid conflicts
+    // Height animation (non-native)
+    Animated.timing(dropdownHeight, {
+      toValue: isOpen ? contentHeight : 0,
+      duration: 300,
+      easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+      useNativeDriver: false,
+    }).start();
+    
+    // Native animations (rotation and opacity)
     Animated.parallel([
-      Animated.timing(dropdownHeight, {
-        toValue: isOpen ? contentHeight : 0,
-        duration: 300,
-        easing: Easing.bezier(0.4, 0.0, 0.2, 1),
-        useNativeDriver: false,
-      }),
       Animated.timing(rotateAnim, {
         toValue: isOpen ? 1 : 0,
         duration: 300,
@@ -95,40 +98,43 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
           styles.dropdown, 
           {
             height: dropdownHeight,
-            opacity: opacityAnim,
             top: dropdownPosition.top,
             left: dropdownPosition.left,
             width: dropdownPosition.width,
             display: dropdownHeight._value === 0 ? 'none' : 'flex',
           }
         ]}
+        // Apply opacity as a separate prop to avoid mixing native and non-native styles
+        // This ensures opacity uses native driver correctly
       >
-        <FlatList
-          data={options}
-          keyExtractor={(item) => item.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={styles.optionItem}
-              onPress={() => handleSelect(item)}
-            >
-              <Text 
-                style={[
-                  styles.optionText,
-                  item === value && styles.selectedOptionText
-                ]}
-                numberOfLines={1}
+        <Animated.View style={{opacity: opacityAnim}}>
+          <FlatList
+            data={options}
+            keyExtractor={(item) => item.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={styles.optionItem}
+                onPress={() => handleSelect(item)}
               >
-                {item}
-              </Text>
-              {item === value && (
-                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-              )}
-            </TouchableOpacity>
-          )}
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={true}
-          style={styles.list}
-        />
+                <Text 
+                  style={[
+                    styles.optionText,
+                    item === value && styles.selectedOptionText
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item}
+                </Text>
+                {item === value && (
+                  <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={true}
+            style={styles.list}
+          />
+        </Animated.View>
       </Animated.View>
     </View>
   );
