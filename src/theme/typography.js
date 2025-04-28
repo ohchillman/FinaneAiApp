@@ -6,7 +6,8 @@ export const typography = {
     lg: 18,
     xl: 20,
     xxl: 24,
-    xxxl: 30,
+    xxxl: 32,
+    xxxxl: 40,
   },
   fontWeights: {
     regular: '400',
@@ -21,6 +22,6 @@ export const typography = {
     lg: 28,
     xl: 32,
     xxl: 36,
-    xxxl: 42,
+    xxxl: 40,
   },
 };

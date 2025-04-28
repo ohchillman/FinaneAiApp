@@ -1,9 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import theme from '../theme';
+import { useUser } from '../context/UserContext';
 
 const TabBar = ({ state, descriptors, navigation }) => {
+  const { user } = useUser();
+  
   return (
     <View style={styles.container}>
       {state.routes.map((route, index) => {
@@ -17,23 +21,6 @@ const TabBar = ({ state, descriptors, navigation }) => {
 
         const isFocused = state.index === index;
 
-        const getIconName = () => {
-          switch (route.name) {
-            case 'Home':
-              return isFocused ? 'home' : 'home-outline';
-            case 'Expenses':
-              return isFocused ? 'list' : 'list-outline';
-            case 'Add':
-              return 'add-circle';
-            case 'Analytics':
-              return isFocused ? 'bar-chart' : 'bar-chart-outline';
-            case 'Profile':
-              return isFocused ? 'person' : 'person-outline';
-            default:
-              return 'help-circle-outline';
-          }
-        };
-
         const onPress = () => {
           const event = navigation.emit({
             type: 'tabPress',
@@ -46,41 +33,78 @@ const TabBar = ({ state, descriptors, navigation }) => {
           }
         };
 
+        let iconName;
+        switch (route.name) {
+          case 'Home':
+            iconName = isFocused ? 'home' : 'home-outline';
+            break;
+          case 'Expenses':
+            iconName = isFocused ? 'card' : 'card-outline';
+            break;
+          case 'Add':
+            iconName = 'add';
+            break;
+          case 'Analytics':
+            iconName = isFocused ? 'bar-chart' : 'bar-chart-outline';
+            break;
+          case 'Profile':
+            iconName = isFocused ? 'person' : 'person-outline';
+            break;
+          default:
+            iconName = 'help-outline';
+        }
+
         return (
           <TouchableOpacity
             key={index}
-            accessibilityRole="button"
-            accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
-            testID={options.tabBarTestID}
+            activeOpacity={0.7}
             onPress={onPress}
             style={[
               styles.tabButton,
               route.name === 'Add' && styles.addButton,
             ]}
           >
-            <Ionicons
-              name={getIconName()}
-              size={route.name === 'Add' ? 40 : 24}
-              color={
-                isFocused
-                  ? theme.colors.primary
-                  : route.name === 'Add'
-                  ? theme.colors.primary
-                  : theme.colors.textLight
-              }
-              style={route.name === 'Add' && styles.addIcon}
-            />
-            {route.name !== 'Add' && (
-              <Text
-                style={[
-                  styles.tabLabel,
-                  isFocused && styles.tabLabelFocused,
-                ]}
-              >
-                {label}
-              </Text>
+            {route.name === 'Profile' ? (
+              user.avatar ? (
+                <Image 
+                  source={{ uri: user.avatar }} 
+                  style={[
+                    styles.profileImage,
+                    isFocused && styles.profileImageActive
+                  ]} 
+                />
+              ) : (
+                <View style={[
+                  styles.profilePlaceholder,
+                  isFocused && styles.profilePlaceholderActive
+                ]}>
+                  <Text style={styles.profileInitial}>
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </Text>
+                </View>
+              )
+            ) : (
+              <Ionicons
+                name={iconName}
+                size={route.name === 'Add' ? 24 : 22}
+                color={
+                  isFocused
+                    ? theme.colors.primary
+                    : route.name === 'Add'
+                    ? 'white'
+                    : theme.colors.textLight
+                }
+              />
             )}
+            <Text
+              style={[
+                styles.tabLabel,
+                isFocused && styles.tabLabelActive,
+                route.name === 'Add' && styles.addLabel,
+              ]}
+            >
+              {label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -94,29 +118,64 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    paddingBottom: theme.spacing.sm,
-    paddingTop: theme.spacing.xs,
-    height: 60,
+    height: 70,
+    paddingBottom: 10,
+    paddingHorizontal: 10,
   },
   tabButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 10,
   },
   addButton: {
-    marginTop: -20,
-  },
-  addIcon: {
-    marginBottom: -5,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 50,
+    width: 40,
+    height: 40,
+    marginTop: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
   },
   tabLabel: {
-    fontSize: theme.typography.fontSizes.xs,
+    fontSize: 12,
     color: theme.colors.textLight,
-    marginTop: 2,
+    marginTop: 4,
   },
-  tabLabelFocused: {
+  tabLabelActive: {
     color: theme.colors.primary,
     fontWeight: theme.typography.fontWeights.medium,
+  },
+  addLabel: {
+    color: 'transparent',
+    height: 0,
+  },
+  profileImage: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  profileImageActive: {
+    borderColor: theme.colors.primary,
+  },
+  profilePlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profilePlaceholderActive: {
+    backgroundColor: theme.colors.primary,
+  },
+  profileInitial: {
+    fontSize: 12,
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.primary,
   },
 });
 
