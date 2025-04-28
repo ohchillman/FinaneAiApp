@@ -129,22 +129,66 @@ export const ExpenseProvider = ({ children }) => {
   // Sort expenses list based on criteria
   const sortExpensesList = (expenseList, criteria) => {
     const sortedList = [...expenseList];
+    
+    // Helper function to safely get a string value for comparison
+    const getSafeString = (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value).toLowerCase();
+    };
+    
+    // Helper function to safely get a number value for comparison
+    const getSafeNumber = (value) => {
+      if (value === null || value === undefined) return 0;
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : num;
+    };
+    
     switch (criteria) {
       case 'Date':
-        sortedList.sort((a, b) => b.date - a.date); // Newest first
+        // Sort by date, newest first
+        sortedList.sort((a, b) => {
+          // Ensure both dates are valid Date objects
+          const dateA = a.date instanceof Date ? a.date : new Date(0);
+          const dateB = b.date instanceof Date ? b.date : new Date(0);
+          return dateB - dateA;
+        });
         break;
+        
       case 'Amount':
-        sortedList.sort((a, b) => parseFloat(b.amount || 0) - parseFloat(a.amount || 0)); // Highest first
+        // Sort by amount, highest first
+        sortedList.sort((a, b) => {
+          return getSafeNumber(b.amount) - getSafeNumber(a.amount);
+        });
         break;
+        
       case 'Category':
-        sortedList.sort((a, b) => a.category.localeCompare(b.category)); // Alphabetical
+        // Sort by category alphabetically
+        sortedList.sort((a, b) => {
+          const categoryA = getSafeString(a.category);
+          const categoryB = getSafeString(b.category);
+          return categoryA.localeCompare(categoryB);
+        });
         break;
-      case 'Name': // Assuming 'description' is the name
-        sortedList.sort((a, b) => a.description.localeCompare(b.description)); // Alphabetical
+        
+      case 'Name':
+        // Sort by name (description or title) alphabetically
+        sortedList.sort((a, b) => {
+          // Try to use description first, then title, then fallback to empty string
+          const nameA = getSafeString(a.description || a.title || a.name);
+          const nameB = getSafeString(b.description || b.title || b.name);
+          return nameA.localeCompare(nameB);
+        });
         break;
+        
       default:
-        sortedList.sort((a, b) => b.date - a.date); // Default to Date
+        // Default to date sorting if criteria is unrecognized
+        sortedList.sort((a, b) => {
+          const dateA = a.date instanceof Date ? a.date : new Date(0);
+          const dateB = b.date instanceof Date ? b.date : new Date(0);
+          return dateB - dateA;
+        });
     }
+    
     return sortedList;
   };
 
@@ -276,4 +320,3 @@ export const useExpenses = () => {
   }
   return context;
 };
-
