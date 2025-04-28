@@ -57,6 +57,7 @@ const DropdownFilter = ({
   const contentHeight = Math.min(options.length * 40, maxHeight); // Adjusted item height
 
   useEffect(() => {
+    let measuredWidth = 0;
     if (containerRef.current && isOpen) {
       // Measure button position when opening
       containerRef.current.measure((x, y, width, height, pageX, pageY) => {
@@ -65,11 +66,12 @@ const DropdownFilter = ({
         // Ensure dropdown doesn't go off-screen
         const calculatedMaxHeight = Math.max(50, spaceBelow - 20); 
         setMaxHeight(Math.min(150, calculatedMaxHeight)); // Limit max height
+        measuredWidth = width; // Store measured width
         
         setDropdownPosition({
           top: height + 2, // Add small gap
           left: 0,
-          width: width,
+          width: measuredWidth, // Use measured width
         });
       });
     }
@@ -139,7 +141,8 @@ const DropdownFilter = ({
   });
 
   return (
-    <View style={[styles.wrapper, style]}>
+    // Apply dynamic zIndex to the wrapper to lift the entire component when open
+    <View style={[styles.wrapper, style, { zIndex: isOpen ? 100 : 1 }]}>
       <TouchableOpacity 
         ref={containerRef}
         style={styles.container} 
@@ -155,6 +158,7 @@ const DropdownFilter = ({
       </TouchableOpacity>
 
       {/* Dropdown List Container - Animates height (JS) */}
+      {/* Ensure this container has a high zIndex to appear above siblings */}
       <Animated.View 
         style={[
           styles.dropdown,
@@ -163,10 +167,11 @@ const DropdownFilter = ({
             left: dropdownPosition.left,
             width: dropdownPosition.width,
             height: dropdownHeight, // Animated height (JS)
-            // Remove opacity from here to avoid conflict
-            zIndex: isOpen ? 100 : -1, 
+            // Apply a very high zIndex specifically to the dropdown list itself
+            zIndex: 1000, 
           }
         ]}
+        // Only allow interaction when fully open (opacity > 0)
         pointerEvents={isOpen ? 'auto' : 'none'}
       >
         {/* Inner Container - Animates opacity (Native) */}
@@ -203,7 +208,7 @@ const DropdownFilter = ({
 const styles = StyleSheet.create({
   wrapper: {
     position: 'relative', 
-    zIndex: 1, 
+    // zIndex is now applied dynamically inline
   },
   container: {
     flexDirection: 'row',
@@ -215,6 +220,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, 
     shadowColor: 'transparent',
     elevation: 0,
+    // Ensure the container itself doesn't block touch events meant for elements below it when closed
+    zIndex: 1, 
   },
   valueText: {
     fontSize: typography.fontSizes.sm, 
@@ -227,12 +234,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: colors.dropdownBackground, 
     borderRadius: 10, 
-    overflow: 'hidden',
+    // overflow: 'hidden', // Removing overflow hidden might help in some zIndex scenarios, but test carefully
     shadowColor: 'transparent',
-    elevation: 0,
+    // Use elevation for Android shadow/layering if needed, but keep it low if possible
+    elevation: Platform.OS === 'android' ? 5 : 0, 
     borderWidth: Platform.OS === 'ios' ? 0.5 : 0, 
     borderColor: colors.border,
     marginTop: 2, 
+    // zIndex is applied dynamically inline
   },
   list: {
     width: '100%',

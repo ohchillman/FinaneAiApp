@@ -11,10 +11,11 @@ export const ExpenseProvider = ({ children }) => {
   const { isDebugMode } = useUser();
   const [expenses, setExpenses] = useState([]);
   const [filteredExpenses, setFilteredExpenses] = useState([]);
-  const [selectedPeriod, setSelectedPeriod] = useState('Month');
   const [isLoading, setIsLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const [dateRangeFilter, setDateRangeFilter] = useState('Last 30 Days'); // New state for date range
+  const [sortCriteria, setSortCriteria] = useState('Date'); // New state for sorting
 
   // Load expenses from storage on mount
   useEffect(() => {
@@ -33,10 +34,10 @@ export const ExpenseProvider = ({ children }) => {
     }
   }, [isDebugMode]);
 
-  // Apply filters whenever expenses, period, category, or search changes
+  // Apply filters and sorting whenever relevant state changes
   useEffect(() => {
-    applyFilters();
-  }, [expenses, selectedPeriod, categoryFilter, searchFilter]);
+    applyFiltersAndSort();
+  }, [expenses, dateRangeFilter, categoryFilter, searchFilter, sortCriteria]);
 
   // Load expenses from storage
   const loadExpenses = async () => {
@@ -44,7 +45,9 @@ export const ExpenseProvider = ({ children }) => {
     try {
       const storedExpenses = await getExpenses();
       if (storedExpenses) {
-        setExpenses(storedExpenses);
+        // Ensure dates are Date objects for proper comparison
+        const parsedExpenses = storedExpenses.map(exp => ({...exp, date: new Date(exp.date)}));
+        setExpenses(parsedExpenses);
       }
     } catch (error) {
       console.error('Error loading expenses:', error);
@@ -57,13 +60,8 @@ export const ExpenseProvider = ({ children }) => {
   const loadTestData = async () => {
     setIsLoading(true);
     try {
-      // Generate test expenses
-      const testExpenses = generateTestExpenses();
-      
-      // Save to storage for persistence
+      const testExpenses = generateTestExpenses().map(exp => ({...exp, date: new Date(exp.date)}));
       await saveExpenses(testExpenses);
-      
-      // Update state
       setExpenses(testExpenses);
       console.log('Debug mode: Loaded test data with', testExpenses.length, 'expenses');
     } catch (error) {
@@ -73,15 +71,15 @@ export const ExpenseProvider = ({ children }) => {
     }
   };
 
-  // Apply all active filters
-  const applyFilters = () => {
+  // Apply all active filters and sorting
+  const applyFiltersAndSort = () => {
     let result = [...expenses];
     
-    // Apply period filter
-    result = filterByPeriod(result, selectedPeriod);
+    // Apply date range filter
+    result = filterByDateRange(result, dateRangeFilter);
     
     // Apply category filter if set
-    if (categoryFilter) {
+    if (categoryFilter && categoryFilter !== 'All Categories') {
       result = result.filter(expense => expense.category === categoryFilter);
     }
     
@@ -89,58 +87,83 @@ export const ExpenseProvider = ({ children }) => {
     if (searchFilter) {
       const searchLower = searchFilter.toLowerCase();
       result = result.filter(expense => 
-        expense.description.toLowerCase().includes(searchLower) ||
-        expense.category.toLowerCase().includes(searchLower)
+        (expense.description && expense.description.toLowerCase().includes(searchLower)) ||
+        (expense.category && expense.category.toLowerCase().includes(searchLower))
       );
     }
     
-    // Sort by date, newest first
-    result.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Apply sorting
+    result = sortExpensesList(result, sortCriteria);
     
     setFilteredExpenses(result);
   };
 
-  // Filter expenses by period
-  const filterByPeriod = (expenseList, period) => {
+  // Filter expenses by selected date range
+  const filterByDateRange = (expenseList, range) => {
     const now = new Date();
-    const startDate = new Date();
-    
-    switch (period) {
-      case 'Day':
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'Week':
+    let startDate = new Date();
+    startDate.setHours(0, 0, 0, 0); // Start from beginning of the day
+
+    switch (range) {
+      case 'Last 7 Days':
         startDate.setDate(now.getDate() - 7);
         break;
-      case 'Month':
-        startDate.setMonth(now.getMonth() - 1);
+      case 'Last 30 Days':
+        startDate.setDate(now.getDate() - 30);
         break;
-      case '3M':
-        startDate.setMonth(now.getMonth() - 3);
+      case 'Last 90 Days':
+        startDate.setDate(now.getDate() - 90);
         break;
-      case 'Year':
-        startDate.setFullYear(now.getFullYear() - 1);
+      case 'This Year':
+        startDate.setFullYear(now.getFullYear(), 0, 1); // January 1st of current year
         break;
       default:
-        startDate.setMonth(now.getMonth() - 1); // Default to Month
+        // Default to Last 30 Days if range is unrecognized
+        startDate.setDate(now.getDate() - 30); 
     }
     
-    return expenseList.filter(expense => new Date(expense.date) >= startDate);
+    // Ensure expense.date is a Date object before comparison
+    return expenseList.filter(expense => expense.date instanceof Date && expense.date >= startDate);
+  };
+
+  // Sort expenses list based on criteria
+  const sortExpensesList = (expenseList, criteria) => {
+    const sortedList = [...expenseList];
+    switch (criteria) {
+      case 'Date':
+        sortedList.sort((a, b) => b.date - a.date); // Newest first
+        break;
+      case 'Amount':
+        sortedList.sort((a, b) => parseFloat(b.amount || 0) - parseFloat(a.amount || 0)); // Highest first
+        break;
+      case 'Category':
+        sortedList.sort((a, b) => a.category.localeCompare(b.category)); // Alphabetical
+        break;
+      case 'Name': // Assuming 'description' is the name
+        sortedList.sort((a, b) => a.description.localeCompare(b.description)); // Alphabetical
+        break;
+      default:
+        sortedList.sort((a, b) => b.date - a.date); // Default to Date
+    }
+    return sortedList;
   };
 
   // Add new expense
   const addExpense = async (expense) => {
     const newExpense = {
       id: generateUniqueId(),
-      date: new Date().toISOString(),
-      ...expense
+      date: new Date(), // Store as Date object
+      ...expense,
+      amount: parseFloat(expense.amount || 0) // Ensure amount is number
     };
     
     const updatedExpenses = [...expenses, newExpense];
+    // Save with date converted to ISO string for storage
+    const expensesToSave = updatedExpenses.map(exp => ({...exp, date: exp.date.toISOString()}));
     setExpenses(updatedExpenses);
     
     try {
-      await saveExpenses(updatedExpenses);
+      await saveExpenses(expensesToSave);
     } catch (error) {
       console.error('Error saving expense:', error);
     }
@@ -149,13 +172,19 @@ export const ExpenseProvider = ({ children }) => {
   // Update existing expense
   const updateExpense = async (id, updatedData) => {
     const updatedExpenses = expenses.map(expense => 
-      expense.id === id ? { ...expense, ...updatedData } : expense
+      expense.id === id ? { 
+        ...expense, 
+        ...updatedData, 
+        date: updatedData.date ? new Date(updatedData.date) : expense.date, // Ensure date is Date object
+        amount: updatedData.amount ? parseFloat(updatedData.amount) : expense.amount // Ensure amount is number
+      } : expense
     );
     
+    const expensesToSave = updatedExpenses.map(exp => ({...exp, date: exp.date.toISOString()}));
     setExpenses(updatedExpenses);
     
     try {
-      await saveExpenses(updatedExpenses);
+      await saveExpenses(expensesToSave);
     } catch (error) {
       console.error('Error updating expense:', error);
     }
@@ -164,18 +193,24 @@ export const ExpenseProvider = ({ children }) => {
   // Delete expense
   const deleteExpense = async (id) => {
     const updatedExpenses = expenses.filter(expense => expense.id !== id);
+    const expensesToSave = updatedExpenses.map(exp => ({...exp, date: exp.date.toISOString()}));
     setExpenses(updatedExpenses);
     
     try {
-      await saveExpenses(updatedExpenses);
+      await saveExpenses(expensesToSave);
     } catch (error) {
       console.error('Error deleting expense:', error);
     }
   };
 
-  // Change selected period
-  const changePeriod = (period) => {
-    setSelectedPeriod(period);
+  // Change selected date range filter
+  const changeDateRangeFilter = (range) => {
+    setDateRangeFilter(range);
+  };
+
+  // Change selected sort criteria
+  const changeSortCriteria = (criteria) => {
+    setSortCriteria(criteria);
   };
 
   // Filter expenses by category
@@ -214,13 +249,15 @@ export const ExpenseProvider = ({ children }) => {
       value={{
         expenses,
         filteredExpenses,
-        selectedPeriod,
+        dateRangeFilter, // Expose current date range
+        sortCriteria, // Expose current sort criteria
         isLoading,
         totalAmount,
         addExpense,
         updateExpense,
         deleteExpense,
-        changePeriod,
+        changeDateRangeFilter, // Expose function to change date range
+        changeSortCriteria, // Expose function to change sort criteria
         refreshExpenses,
         filterExpensesByCategory,
         filterExpensesBySearch
@@ -239,3 +276,4 @@ export const useExpenses = () => {
   }
   return context;
 };
+

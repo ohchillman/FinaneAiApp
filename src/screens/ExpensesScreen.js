@@ -8,9 +8,9 @@ import {
   ActivityIndicator, 
   TextInput, 
   TouchableOpacity, 
-  TouchableWithoutFeedback, // Import TouchableWithoutFeedback
-  Keyboard, // Import Keyboard
-  Platform // Import Platform for potential OS-specific adjustments
+  TouchableWithoutFeedback, 
+  Keyboard, 
+  Platform 
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -79,50 +79,56 @@ import { EXPENSE_CATEGORIES } from '../utils/constants';
 const ExpensesScreen = ({ navigation }) => {
   const {
     filteredExpenses,
-    selectedPeriod,
-    changePeriod,
     isLoading,
     refreshExpenses,
     filterExpensesByCategory,
     filterExpensesBySearch,
-    sortExpenses // Assuming a sort function exists or needs to be added
+    // New functions from updated context
+    changeDateRangeFilter,
+    changeSortCriteria,
+    dateRangeFilter,
+    sortCriteria
   } = useExpenses();
   const { user } = useUser();
   const insets = useSafeAreaInsets();
 
-  // State for filters
+  // State for filters - now using values from context
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [selectedDateRange, setSelectedDateRange] = useState('Last 30 Days');
-  const [selectedSort, setSelectedSort] = useState('Date'); // Add state for sorting
+  const [selectedDateRange, setSelectedDateRange] = useState(dateRangeFilter || 'Last 30 Days');
+  const [selectedSort, setSelectedSort] = useState(sortCriteria || 'Date');
   const [searchText, setSearchText] = useState('');
   const [activeDropdownId, setActiveDropdownId] = useState(null); // State to track open dropdown
+
+  // Sync local state with context when context values change
+  useEffect(() => {
+    setSelectedDateRange(dateRangeFilter || 'Last 30 Days');
+  }, [dateRangeFilter]);
+
+  useEffect(() => {
+    setSelectedSort(sortCriteria || 'Date');
+  }, [sortCriteria]);
 
   // Options for dropdowns
   const categoryOptions = ['All Categories', ...EXPENSE_CATEGORIES.map(cat => cat.name)];
   const periodOptions = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days', 'This Year'];
   const sortOptions = ["Date", "Amount", "Category", "Name"];
-  // Removed the "View" dropdown as it wasn't in the screenshot and seems redundant
 
   // Handle category change
   const handleCategoryChange = (newCategory) => {
     setSelectedCategory(newCategory);
     filterExpensesByCategory(newCategory === 'All Categories' ? null : newCategory);
-    // Close dropdown handled by DropdownFilter component
   };
 
   // Handle date range change
   const handleDateRangeChange = (newRange) => {
     setSelectedDateRange(newRange);
-    // TODO: Implement date range filtering logic in useExpenses hook
-    console.log("Selected date range:", newRange); // Placeholder
+    changeDateRangeFilter(newRange); // Call context function to update date range filter
   };
 
   // Handle sort change
   const handleSortChange = (newSort) => {
     setSelectedSort(newSort);
-    // TODO: Implement sorting logic in useExpenses hook
-    // sortExpenses(newSort); // Example call
-    console.log("Selected sort:", newSort); // Placeholder
+    changeSortCriteria(newSort); // Call context function to update sort criteria
   };
 
   // Handle search text change
@@ -144,10 +150,6 @@ const ExpensesScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Expenses</Text>
-          {/* Optional: Add settings icon if needed */}
-          {/* <TouchableOpacity style={styles.settingsIcon}>
-            <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-          </TouchableOpacity> */}
         </View>
 
         {/* Dropdown Filters - Adjusted layout to match screenshot */}
@@ -189,19 +191,8 @@ const ExpensesScreen = ({ navigation }) => {
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
-            {/* Removed the second dropdown from this row */}
           </View>
         </View>
-
-        {/* Search Input - Removed as it's not in the screenshot */}
-        {/* <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search expenses..."
-            value={searchText}
-            onChangeText={handleSearchChange}
-          />
-        </View> */}
 
         {/* Expense List */}
         {isLoading ? (
@@ -225,15 +216,6 @@ const ExpensesScreen = ({ navigation }) => {
             keyboardShouldPersistTaps="handled"
           />
         )}
-
-        {/* Time Filter at the bottom - Removed as it's not in the screenshot */}
-        {/* <View style={[styles.bottomFilterContainer, { paddingBottom: insets.bottom }]}>
-          <TimeFilter
-            options={['Day', 'Week', 'Month']}
-            selectedOption={selectedPeriod}
-            onSelect={changePeriod}
-          />
-        </View> */}
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -286,7 +268,6 @@ const styles = StyleSheet.create({
      flexGrow: 0.6, // Adjust flex grow as needed, less than the full row items
      // marginRight is handled individually below
   },
-  // Removed the invalid CSS selector
   searchContainer: {
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
@@ -314,8 +295,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textLight,
   },
-  // Removed bottomFilterContainer styles
 });
 
 export default ExpensesScreen;
-
