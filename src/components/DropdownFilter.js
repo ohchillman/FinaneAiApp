@@ -37,6 +37,8 @@ const typography = {
   },
 };
 
+const ITEM_HEIGHT = 40; // Define item height as a constant
+
 const DropdownFilter = ({ 
   id, 
   label, 
@@ -55,110 +57,125 @@ const DropdownFilter = ({
   
   // Pre-calculate dimensions to avoid jitter
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 }); 
-  const [maxHeight, setMaxHeight] = useState(150);
+  const [maxHeight, setMaxHeight] = useState(300); // Increased default max height
   const [hasMeasured, setHasMeasured] = useState(false);
-  
-  // Calculate content height based on options
-  const contentHeight = Math.min(options.length * 40, maxHeight);
+  // State for calculated content height
+  const [calculatedContentHeight, setCalculatedContentHeight] = useState(0);
+
+  // Calculate exact height needed for all options without scrolling
+  const exactContentHeight = options.length * ITEM_HEIGHT;
+
+  // Update content height when maxHeight or options change
+  useEffect(() => {
+    // Always use exact content height to show all options without scrolling
+    setCalculatedContentHeight(exactContentHeight);
+  }, [options, exactContentHeight]);
 
   // Measure button position on mount and window resize
   useLayoutEffect(() => {
     const measureButton = () => {
       if (containerRef.current) {
-        containerRef.current.measureInWindow((pageX, pageY, width, height) => {
-          const screenHeight = Dimensions.get('window').height;
-          const spaceBelow = screenHeight - pageY - height;
-          const calculatedMaxHeight = Math.max(50, spaceBelow - 20);
-          
-          setMaxHeight(Math.min(150, calculatedMaxHeight));
-          setDropdownPosition({
-            top: pageY + height + 2,
-            left: pageX,
-            width: width,
-          });
-          setHasMeasured(true);
-        });
+        // Use setTimeout to ensure layout is stable before measuring
+        setTimeout(() => {
+          if (containerRef.current) { // Check ref again inside timeout
+            containerRef.current.measureInWindow((pageX, pageY, width, height) => {
+              if (!pageX && !pageY && !width && !height) {
+                // Measurement failed, retry?
+                console.warn('Dropdown measurement failed for ID:', id);
+                return;
+              }
+              const screenHeight = Dimensions.get('window').height;
+              const spaceBelow = screenHeight - pageY - height;
+              
+              // Calculate available space, ensuring we have at least enough for all options
+              // If not enough space below, we'll position it above the button
+              const availableSpace = Math.max(exactContentHeight, spaceBelow - 20);
+              
+              setMaxHeight(availableSpace); // Use all available space
+              
+              // Determine if dropdown should appear above or below the button
+              const shouldPositionAbove = exactContentHeight > spaceBelow && pageY > exactContentHeight;
+              
+              setDropdownPosition({
+                top: shouldPositionAbove ? pageY - exactContentHeight - 2 : pageY + height + 2,
+                left: pageX,
+                width: width,
+              });
+              
+              if (!hasMeasured) setHasMeasured(true); // Set measured only once initially
+            });
+          }
+        }, 0); // Use timeout 0 to defer measurement until after current render cycle
       }
     };
 
-    // Initial measurement
-    measureButton();
+    measureButton(); // Initial measurement
 
-    // Re-measure on dimension change
     const dimensionsListener = Dimensions.addEventListener('change', measureButton);
-
     return () => {
       dimensionsListener.remove();
     };
-  }, []);
+  }, []); // Run only on mount
 
-  // Re-measure when dropdown opens if needed
+  // Handle Animations
   useEffect(() => {
-    if (isOpen && containerRef.current) {
-      containerRef.current.measureInWindow((pageX, pageY, width, height) => {
-        const screenHeight = Dimensions.get('window').height;
-        const spaceBelow = screenHeight - pageY - height;
-        const calculatedMaxHeight = Math.max(50, spaceBelow - 20);
-        
-        setMaxHeight(Math.min(150, calculatedMaxHeight));
-        setDropdownPosition({
-          top: pageY + height + 2,
-          left: pageX,
-          width: width,
-        });
-      });
+    // Only run animations if measurements are done and content height is known
+    if (hasMeasured && calculatedContentHeight > 0) {
+      if (isOpen) {
+        // Start opening animations
+        opacityAnim.setValue(0); // Ensure opacity starts at 0
+        Animated.parallel([
+          Animated.timing(dropdownHeight, {
+            toValue: calculatedContentHeight, // Animate to calculated height
+            duration: 200, // Slightly faster animation
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: false, 
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: 200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true, 
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 150, // Faster fade in
+            delay: 50, 
+            useNativeDriver: true, 
+          })
+        ]).start();
+      } else {
+        // Start closing animations
+        Animated.parallel([
+          Animated.timing(opacityAnim, {
+            toValue: 0,
+            duration: 150,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(dropdownHeight, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.in(Easing.ease),
+            useNativeDriver: false,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: 0,
+            duration: 200,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          })
+        ]).start();
+      }
     }
-
-    // Animations
-    if (isOpen) {
-      // Reset opacity before starting open animation
-      opacityAnim.setValue(0);
-      Animated.parallel([
-        Animated.timing(dropdownHeight, {
-          toValue: contentHeight,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: false, 
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true, 
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 200,
-          delay: 50, 
-          useNativeDriver: true, 
-        })
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 150, 
-          easing: Easing.in(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(dropdownHeight, {
-          toValue: 0,
-          duration: 200,
-          easing: Easing.in(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 0,
-          duration: 250,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        })
-      ]).start();
-    }
-  }, [isOpen, contentHeight, dropdownHeight, rotateAnim, opacityAnim]);
+  // Dependencies: isOpen triggers the animation logic, but it depends on hasMeasured and calculatedContentHeight
+  }, [isOpen, hasMeasured, calculatedContentHeight, dropdownHeight, rotateAnim, opacityAnim]);
 
   const toggleDropdown = () => {
-    setActiveDropdownId(isOpen ? null : id);
+    // Ensure measurement is done before allowing toggle, prevents potential issues
+    if (hasMeasured) {
+      setActiveDropdownId(isOpen ? null : id);
+    }
   };
 
   const handleSelect = (option) => {
@@ -182,13 +199,20 @@ const DropdownFilter = ({
         style={styles.container} 
         onPress={toggleDropdown}
         activeOpacity={0.8}
+        // Disable press until measured to prevent opening before position is known
+        disabled={!hasMeasured} 
       >
         <Text style={styles.valueText} numberOfLines={1} ellipsizeMode="tail">
           {label}: {value}
         </Text>
-        <Animated.View style={{ transform: [{ rotate }] }}>
-          <Ionicons name="chevron-down" size={20} color={colors.primary} />
-        </Animated.View>
+        {/* Show indicator only when measured */}
+        {hasMeasured ? (
+          <Animated.View style={{ transform: [{ rotate }] }}>
+            <Ionicons name="chevron-down" size={20} color={colors.primary} />
+          </Animated.View>
+        ) : (
+          <View style={{ width: 20 }} /> // Placeholder for alignment
+        )}
       </TouchableOpacity>
 
       {/* Only render Modal when measurements are ready */}
@@ -234,9 +258,11 @@ const DropdownFilter = ({
                         </Text>
                       </TouchableOpacity>
                     )}
-                    nestedScrollEnabled
+                    scrollEnabled={false} // Disable scrolling since we're showing all options
                     showsVerticalScrollIndicator={false}
                     style={styles.list}
+                    // Ensure list items are rendered immediately for height calculation
+                    initialNumToRender={options.length} 
                   />
                 </Animated.View>
               </Animated.View>
@@ -285,7 +311,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   optionItem: {
-    paddingVertical: 10,
+    height: ITEM_HEIGHT, // Use constant height
+    justifyContent: 'center', // Center text vertically
     paddingHorizontal: 15,
     borderBottomWidth: 0, 
   },

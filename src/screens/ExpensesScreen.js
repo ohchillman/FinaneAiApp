@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -6,14 +6,14 @@ import {
   SafeAreaView, 
   FlatList, 
   ActivityIndicator, 
-  TextInput, 
   TouchableOpacity, 
   TouchableWithoutFeedback, 
   Keyboard, 
-  Platform 
+  Platform,
+  Modal
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Calendar, CalendarList } from 'react-native-calendars';
 
 // Assuming theme object might exist elsewhere or defining fallback colors
 const theme = {
@@ -86,7 +86,7 @@ const ExpensesScreen = ({ navigation }) => {
     filterExpensesBySearch,
     changeDateRangeFilter,
     changeSortCriteria,
-    dateRangeFilter, // This might be a string or an object for custom range
+    dateRangeFilter,
     sortCriteria
   } = useExpenses();
   const { user } = useUser();
@@ -98,12 +98,12 @@ const ExpensesScreen = ({ navigation }) => {
   const [searchText, setSearchText] = useState('');
   const [activeDropdownId, setActiveDropdownId] = useState(null);
 
-  // State for custom date range picker
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [datePickerMode, setDatePickerMode] = useState('start'); // 'start' or 'end'
-  const [customStartDate, setCustomStartDate] = useState(null);
-  const [customEndDate, setCustomEndDate] = useState(null);
-  const [datePickerTitle, setDatePickerTitle] = useState('Select Start Date');
+  // State for calendar date picker
+  const [isCalendarVisible, setCalendarVisible] = useState(false);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [markedDates, setMarkedDates] = useState({});
+  const [calendarKey, setCalendarKey] = useState(Date.now().toString()); // Force re-render when needed
 
   // Determine the display value for the Period dropdown
   const getPeriodDisplayValue = () => {
@@ -126,6 +126,63 @@ const ExpensesScreen = ({ navigation }) => {
     setSelectedSort(sortCriteria || 'Date');
   }, [sortCriteria]);
 
+  // Update marked dates when start/end dates change
+  useEffect(() => {
+    updateMarkedDates();
+  }, [startDate, endDate]);
+
+  // Function to update marked dates for calendar
+  const updateMarkedDates = () => {
+    const newMarkedDates = {};
+    
+    if (startDate && endDate) {
+      // Format dates for the calendar
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Mark start date
+      const startDateStr = start.toISOString().split('T')[0];
+      newMarkedDates[startDateStr] = {
+        startingDay: true,
+        color: '#734F96',
+        textColor: 'white'
+      };
+      
+      // Mark end date
+      const endDateStr = end.toISOString().split('T')[0];
+      if (startDateStr !== endDateStr) {
+        newMarkedDates[endDateStr] = {
+          endingDay: true,
+          color: '#734F96',
+          textColor: 'white'
+        };
+        
+        // Mark dates in between
+        const currentDate = new Date(start);
+        currentDate.setDate(currentDate.getDate() + 1);
+        
+        while (currentDate < end) {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          newMarkedDates[dateStr] = {
+            color: '#EDE8F2',
+            textColor: '#734F96'
+          };
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      }
+    } else if (startDate) {
+      // Only start date is selected
+      const startDateStr = new Date(startDate).toISOString().split('T')[0];
+      newMarkedDates[startDateStr] = {
+        selected: true,
+        color: '#734F96',
+        textColor: 'white'
+      };
+    }
+    
+    setMarkedDates(newMarkedDates);
+  };
+
   // Options for dropdowns - Add 'Custom Range'
   const categoryOptions = ['All Categories', ...EXPENSE_CATEGORIES.map(cat => cat.name)];
   const periodOptions = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days', 'This Year', 'Custom Range'];
@@ -140,12 +197,12 @@ const ExpensesScreen = ({ navigation }) => {
   // Handle date range change
   const handleDateRangeChange = (newRange) => {
     if (newRange === 'Custom Range') {
-      // Reset dates and open start date picker
-      setCustomStartDate(null);
-      setCustomEndDate(null);
-      setDatePickerMode('start');
-      setDatePickerTitle('Select Start Date');
-      setDatePickerVisibility(true);
+      // Reset dates and open calendar
+      setStartDate(null);
+      setEndDate(null);
+      setMarkedDates({});
+      setCalendarKey(Date.now().toString()); // Force calendar re-render
+      setCalendarVisible(true);
     } else {
       // For predefined ranges, update context directly
       changeDateRangeFilter(newRange);
@@ -158,55 +215,51 @@ const ExpensesScreen = ({ navigation }) => {
     changeSortCriteria(newSort);
   };
 
-  // Handle search text change
-  const handleSearchChange = (text) => {
-    setSearchText(text);
-    filterExpensesBySearch(text);
-  };
-
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
     setActiveDropdownId(null);
     Keyboard.dismiss();
   };
 
-  // --- Date Picker Modal Handlers ---
-  const showDatePicker = (mode) => {
-    setDatePickerMode(mode);
-    setDatePickerTitle(mode === 'start' ? 'Select Start Date' : 'Select End Date');
-    setDatePickerVisibility(true);
-  };
-
-  const hideDatePicker = () => {
-    setDatePickerVisibility(false);
-  };
-
-  const handleConfirmDate = (date) => {
-    hideDatePicker();
-    if (datePickerMode === 'start') {
-      setCustomStartDate(date);
-      // Automatically open end date picker after selecting start date
-      setTimeout(() => {
-        setDatePickerMode('end');
-        setDatePickerTitle('Select End Date');
-        setDatePickerVisibility(true);
-      }, Platform.OS === 'ios' ? 500 : 0); // Delay needed for iOS modal transition
+  // Calendar date selection handler
+  const handleDayPress = (day) => {
+    if (!startDate || (startDate && endDate)) {
+      // First selection or new range
+      setStartDate(day.dateString);
+      setEndDate(null);
     } else {
-      setCustomEndDate(date);
-      // Ensure start date is set before applying
-      if (customStartDate) {
-        // Ensure end date is not before start date
-        const finalEndDate = date < customStartDate ? customStartDate : date;
-        // Apply custom range filter
-        changeDateRangeFilter({ 
-          type: 'custom', 
-          startDate: customStartDate, 
-          endDate: finalEndDate 
-        });
+      // Second selection - complete the range
+      const selectedDate = new Date(day.dateString);
+      const start = new Date(startDate);
+      
+      if (selectedDate < start) {
+        // If selected date is before start date, swap them
+        setEndDate(startDate);
+        setStartDate(day.dateString);
+      } else {
+        setEndDate(day.dateString);
       }
     }
   };
-  // --- End Date Picker Modal Handlers ---
+
+  // Apply custom date range and close calendar
+  const applyCustomDateRange = () => {
+    if (startDate && endDate) {
+      changeDateRangeFilter({
+        type: 'custom',
+        startDate: new Date(startDate),
+        endDate: new Date(endDate)
+      });
+      setCalendarVisible(false);
+    }
+  };
+
+  // Cancel custom date range selection
+  const cancelCustomDateRange = () => {
+    setCalendarVisible(false);
+    setStartDate(null);
+    setEndDate(null);
+  };
 
   return (
     <TouchableWithoutFeedback onPress={closeAllDropdowns}>
@@ -278,43 +331,98 @@ const ExpensesScreen = ({ navigation }) => {
           />
         )}
 
-        {/* Date Picker Modal */}
-        <DateTimePickerModal
-          isVisible={isDatePickerVisible}
-          mode="date"
-          onConfirm={handleConfirmDate}
-          onCancel={hideDatePicker}
-          date={datePickerMode === 'start' 
-            ? (customStartDate || new Date()) 
-            : (customEndDate || customStartDate || new Date())
-          }
-          maximumDate={datePickerMode === 'start' ? undefined : new Date()} // End date can't be in future
-          minimumDate={datePickerMode === 'end' ? customStartDate : undefined} // End date must be after start
-          headerTextIOS={datePickerTitle}
-          confirmTextIOS="Confirm"
-          cancelTextIOS="Cancel"
-          customHeaderIOS={() => (
-            <View style={styles.datePickerHeader}>
-              <Text style={styles.datePickerTitle}>{datePickerTitle}</Text>
+        {/* Calendar Modal for Date Range Selection */}
+        <Modal
+          transparent={true}
+          visible={isCalendarVisible}
+          animationType="fade"
+          onRequestClose={cancelCustomDateRange}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.calendarContainer}>
+              {/* Calendar Header */}
+              <View style={styles.calendarHeader}>
+                <Text style={styles.calendarTitle}>
+                  {!startDate 
+                    ? 'Select Start Date' 
+                    : !endDate 
+                      ? 'Select End Date' 
+                      : 'Date Range Selected'}
+                </Text>
+              </View>
+              
+              {/* Calendar Component */}
+              <Calendar
+                key={calendarKey}
+                onDayPress={handleDayPress}
+                markedDates={markedDates}
+                markingType="period"
+                maxDate={new Date().toISOString().split('T')[0]} // Can't select future dates
+                theme={{
+                  calendarBackground: '#FFFFFF',
+                  textSectionTitleColor: '#734F96',
+                  selectedDayBackgroundColor: '#734F96',
+                  selectedDayTextColor: '#FFFFFF',
+                  todayTextColor: '#734F96',
+                  dayTextColor: '#333333',
+                  textDisabledColor: '#D9DADC',
+                  dotColor: '#734F96',
+                  selectedDotColor: '#FFFFFF',
+                  arrowColor: '#734F96',
+                  monthTextColor: '#734F96',
+                  indicatorColor: '#734F96',
+                  textDayFontWeight: '300',
+                  textMonthFontWeight: 'bold',
+                  textDayHeaderFontWeight: '500',
+                  textDayFontSize: 16,
+                  textMonthFontSize: 16,
+                  textDayHeaderFontSize: 14
+                }}
+              />
+              
+              {/* Selected Date Range Display */}
+              <View style={styles.selectedRangeContainer}>
+                <Text style={styles.selectedRangeText}>
+                  {startDate 
+                    ? `Start: ${new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` 
+                    : 'Start: Not selected'}
+                </Text>
+                <Text style={styles.selectedRangeText}>
+                  {endDate 
+                    ? `End: ${new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` 
+                    : 'End: Not selected'}
+                </Text>
+              </View>
+              
+              {/* Action Buttons */}
+              <View style={styles.calendarActions}>
+                <TouchableOpacity 
+                  style={[styles.calendarButton, styles.calendarCancelButton]} 
+                  onPress={cancelCustomDateRange}
+                >
+                  <Text style={styles.calendarButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[
+                    styles.calendarButton, 
+                    styles.calendarApplyButton,
+                    (!startDate || !endDate) && styles.calendarButtonDisabled
+                  ]} 
+                  onPress={applyCustomDateRange}
+                  disabled={!startDate || !endDate}
+                >
+                  <Text style={[
+                    styles.calendarButtonText, 
+                    styles.calendarApplyText,
+                    (!startDate || !endDate) && styles.calendarButtonTextDisabled
+                  ]}>
+                    Apply
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          )}
-          customCancelButtonIOS={({ onPress }) => (
-            <TouchableOpacity 
-              style={[styles.datePickerButton, styles.datePickerCancelButton]} 
-              onPress={onPress}
-            >
-              <Text style={styles.datePickerButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          )}
-          customConfirmButtonIOS={({ onPress }) => (
-            <TouchableOpacity 
-              style={[styles.datePickerButton, styles.datePickerConfirmButton]} 
-              onPress={onPress}
-            >
-              <Text style={[styles.datePickerButtonText, styles.datePickerConfirmText]}>Confirm</Text>
-            </TouchableOpacity>
-          )}
-        />
+          </View>
+        </Modal>
 
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -388,42 +496,87 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textLight,
   },
-  // Date Picker Styles
-  datePickerHeader: {
+  // Calendar Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarContainer: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  calendarHeader: {
     backgroundColor: '#EDE8F2',
     paddingVertical: 15,
     alignItems: 'center',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
   },
-  datePickerTitle: {
+  calendarTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#734F96',
   },
-  datePickerButton: {
+  selectedRangeContainer: {
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#EDE8F2',
+  },
+  selectedRangeText: {
+    fontSize: 16,
+    color: '#333333',
+    marginVertical: 2,
+  },
+  calendarActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#EDE8F2',
+  },
+  calendarButton: {
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    marginHorizontal: 10,
-    marginVertical: 8,
+    flex: 1,
+    marginHorizontal: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  datePickerCancelButton: {
+  calendarCancelButton: {
     backgroundColor: '#F0F0F0',
   },
-  datePickerConfirmButton: {
+  calendarApplyButton: {
     backgroundColor: '#EDE8F2',
   },
-  datePickerButtonText: {
+  calendarButtonDisabled: {
+    backgroundColor: '#F0F0F0',
+    opacity: 0.7,
+  },
+  calendarButtonText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333333',
   },
-  datePickerConfirmText: {
+  calendarApplyText: {
     color: '#734F96',
     fontWeight: '600',
+  },
+  calendarButtonTextDisabled: {
+    color: '#999999',
   },
 });
 
