@@ -38,6 +38,7 @@ const typography = {
 };
 
 const ITEM_HEIGHT = 40; // Define item height as a constant
+const DROPDOWN_MARGIN = 5; // Margin between button and dropdown
 
 const DropdownFilter = ({ 
   id, 
@@ -53,11 +54,11 @@ const DropdownFilter = ({
   const dropdownHeight = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current; // Added scale animation
   const containerRef = useRef(null);
   
   // Pre-calculate dimensions to avoid jitter
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 }); 
-  const [maxHeight, setMaxHeight] = useState(300); // Increased default max height
   const [hasMeasured, setHasMeasured] = useState(false);
   // State for calculated content height
   const [calculatedContentHeight, setCalculatedContentHeight] = useState(0);
@@ -65,7 +66,7 @@ const DropdownFilter = ({
   // Calculate exact height needed for all options without scrolling
   const exactContentHeight = options.length * ITEM_HEIGHT;
 
-  // Update content height when maxHeight or options change
+  // Update content height when options change
   useEffect(() => {
     // Always use exact content height to show all options without scrolling
     setCalculatedContentHeight(exactContentHeight);
@@ -84,20 +85,10 @@ const DropdownFilter = ({
                 console.warn('Dropdown measurement failed for ID:', id);
                 return;
               }
-              const screenHeight = Dimensions.get('window').height;
-              const spaceBelow = screenHeight - pageY - height;
               
-              // Calculate available space, ensuring we have at least enough for all options
-              // If not enough space below, we'll position it above the button
-              const availableSpace = Math.max(exactContentHeight, spaceBelow - 20);
-              
-              setMaxHeight(availableSpace); // Use all available space
-              
-              // Determine if dropdown should appear above or below the button
-              const shouldPositionAbove = exactContentHeight > spaceBelow && pageY > exactContentHeight;
-              
+              // Always position below the button with a margin
               setDropdownPosition({
-                top: shouldPositionAbove ? pageY - exactContentHeight - 2 : pageY + height + 2,
+                top: pageY + height + DROPDOWN_MARGIN, // Position below with margin
                 left: pageX,
                 width: width,
               });
@@ -122,54 +113,73 @@ const DropdownFilter = ({
     // Only run animations if measurements are done and content height is known
     if (hasMeasured && calculatedContentHeight > 0) {
       if (isOpen) {
-        // Start opening animations
-        opacityAnim.setValue(0); // Ensure opacity starts at 0
-        Animated.parallel([
+        // Reset animation values
+        opacityAnim.setValue(0);
+        scaleAnim.setValue(0.95);
+        dropdownHeight.setValue(0);
+        
+        // Improved opening animation sequence
+        Animated.sequence([
+          // First, start height animation
           Animated.timing(dropdownHeight, {
-            toValue: calculatedContentHeight, // Animate to calculated height
-            duration: 200, // Slightly faster animation
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: false, 
+            toValue: calculatedContentHeight,
+            duration: 250,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smoother cubic bezier curve
+            useNativeDriver: false,
           }),
-          Animated.timing(rotateAnim, {
-            toValue: 1,
-            duration: 200,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true, 
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 150, // Faster fade in
-            delay: 50, 
-            useNativeDriver: true, 
-          })
+          // Then, once height is set, animate opacity and scale together
+          Animated.parallel([
+            Animated.timing(opacityAnim, {
+              toValue: 1,
+              duration: 200,
+              easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: 1,
+              duration: 200,
+              easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+              useNativeDriver: true,
+            }),
+            Animated.timing(rotateAnim, {
+              toValue: 1,
+              duration: 200,
+              easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+              useNativeDriver: true,
+            })
+          ])
         ]).start();
       } else {
-        // Start closing animations
+        // Improved closing animation
         Animated.parallel([
           Animated.timing(opacityAnim, {
             toValue: 0,
             duration: 150,
-            easing: Easing.in(Easing.ease),
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.95,
+            duration: 150,
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
             useNativeDriver: true,
           }),
           Animated.timing(dropdownHeight, {
             toValue: 0,
             duration: 200,
-            easing: Easing.in(Easing.ease),
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
             useNativeDriver: false,
           }),
           Animated.timing(rotateAnim, {
             toValue: 0,
             duration: 200,
-            easing: Easing.out(Easing.ease),
+            easing: Easing.bezier(0.25, 0.1, 0.25, 1),
             useNativeDriver: true,
           })
         ]).start();
       }
     }
-  // Dependencies: isOpen triggers the animation logic, but it depends on hasMeasured and calculatedContentHeight
-  }, [isOpen, hasMeasured, calculatedContentHeight, dropdownHeight, rotateAnim, opacityAnim]);
+  }, [isOpen, hasMeasured, calculatedContentHeight, dropdownHeight, rotateAnim, opacityAnim, scaleAnim]);
 
   const toggleDropdown = () => {
     // Ensure measurement is done before allowing toggle, prevents potential issues
@@ -234,11 +244,13 @@ const DropdownFilter = ({
                     left: dropdownPosition.left,
                     width: dropdownPosition.width,
                     height: dropdownHeight,
+                    transform: [{ scale: scaleAnim }], // Apply scale animation
+                    opacity: opacityAnim, // Apply opacity directly to container
                   }
                 ]}
               >
-                {/* Inner Animated Container for OPACITY animation (Native thread) */}
-                <Animated.View style={{ flex: 1, opacity: opacityAnim }}>
+                {/* Content container */}
+                <View style={{ flex: 1 }}>
                   <FlatList
                     data={options}
                     keyExtractor={(item) => item.toString()}
@@ -264,7 +276,7 @@ const DropdownFilter = ({
                     // Ensure list items are rendered immediately for height calculation
                     initialNumToRender={options.length} 
                   />
-                </Animated.View>
+                </View>
               </Animated.View>
             </View>
           </TouchableWithoutFeedback>
@@ -306,6 +318,8 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 0,
     overflow: 'hidden',
+    // Add origin for scale animation
+    transformOrigin: 'top center',
   },
   list: {
     width: '100%',
