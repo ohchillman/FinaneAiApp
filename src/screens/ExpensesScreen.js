@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../theme';
 import ExpenseItem from '../components/ExpenseItem';
 import TimeFilter from '../components/TimeFilter';
-import DropdownFilter from '../components/DropdownFilter'; // Import the new component
+import DropdownFilter from '../components/DropdownFilter';
 import { useExpenses } from '../context/ExpenseContext';
 import { useUser } from '../context/UserContext';
+import { EXPENSE_CATEGORIES } from '../utils/constants';
 
 const ExpensesScreen = ({ navigation }) => {
   const { 
@@ -14,51 +15,69 @@ const ExpensesScreen = ({ navigation }) => {
     selectedPeriod, 
     changePeriod, 
     isLoading,
-    refreshExpenses
+    refreshExpenses,
+    filterExpensesByCategory,
+    filterExpensesBySearch
   } = useExpenses();
-  const { user, updateUser } = useUser();
+  const { user } = useUser();
   const insets = useSafeAreaInsets();
 
-  // Mock options for dropdowns - replace with actual logic if needed
-  const currencyOptions = ['USD', 'EUR', 'GBP'];
-  const periodOptions = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days'];
-  const [selectedCurrency, setSelectedCurrency] = useState(user.currency || 'USD');
+  // State for filters
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedDateRange, setSelectedDateRange] = useState('Last 30 Days');
+  const [searchText, setSearchText] = useState('');
+  
+  // Get all category names for the dropdown
+  const categoryOptions = ['All Categories', ...EXPENSE_CATEGORIES.map(cat => cat.name)];
+  const periodOptions = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days', 'This Year'];
 
-  // Handle currency change
-  const handleCurrencyChange = (newCurrency) => {
-    setSelectedCurrency(newCurrency);
-    updateUser({ currency: newCurrency });
-    // Potentially refresh expenses or re-calculate amounts based on new currency
+  // Handle category change
+  const handleCategoryChange = (newCategory) => {
+    setSelectedCategory(newCategory);
+    filterExpensesByCategory(newCategory === 'All Categories' ? null : newCategory);
   };
 
   // Handle date range change
   const handleDateRangeChange = (newRange) => {
     setSelectedDateRange(newRange);
-    // Potentially filter expenses based on the selected date range
-    // This might require more complex logic than the simple Day/Week/Month filter
+    // Implement date range filtering logic here
+  };
+
+  // Handle search text change
+  const handleSearchChange = (text) => {
+    setSearchText(text);
+    filterExpensesBySearch(text);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Expenses</Text>
-        {/* Settings icon can be added here if needed */}
       </View>
 
       {/* Dropdown Filters */}
       <View style={styles.filterRow}>
         <DropdownFilter
-          label="Currency"
-          value={selectedCurrency}
-          options={currencyOptions}
-          onSelect={handleCurrencyChange}
+          label="Category"
+          value={selectedCategory}
+          options={categoryOptions}
+          onSelect={handleCategoryChange}
         />
         <DropdownFilter
           label="Period"
           value={selectedDateRange}
           options={periodOptions}
           onSelect={handleDateRangeChange}
+        />
+      </View>
+
+      {/* Search Input */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search expenses..."
+          value={searchText}
+          onChangeText={handleSearchChange}
         />
       </View>
 
@@ -71,7 +90,7 @@ const ExpensesScreen = ({ navigation }) => {
           renderItem={({ item }) => (
             <ExpenseItem 
               item={item} 
-              currency={selectedCurrency} 
+              currency={user.currency} 
               onPress={() => navigation.navigate('Add', { expense: item })} 
             />
           )}
@@ -83,7 +102,7 @@ const ExpensesScreen = ({ navigation }) => {
       )}
 
       {/* Time Filter at the bottom */}
-      <View style={[styles.bottomFilterContainer, { paddingBottom: insets.bottom + 8 }]}>
+      <View style={[styles.bottomFilterContainer, { paddingBottom: insets.bottom }]}>
         <TimeFilter
           options={['Day', 'Week', 'Month']}
           selectedOption={selectedPeriod}
@@ -114,6 +133,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
+  searchContainer: {
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+  },
+  searchInput: {
+    backgroundColor: theme.colors.inputBackground,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    fontSize: theme.typography.fontSizes.md,
+    color: theme.colors.text,
+  },
   loader: {
     marginTop: 50,
   },
@@ -135,8 +166,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.background, // Ensure background matches
     paddingTop: theme.spacing.sm, // Add some top padding
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
   },
 });
 
