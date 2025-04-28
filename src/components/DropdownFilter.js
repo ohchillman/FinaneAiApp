@@ -168,6 +168,7 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
           />
         </Animated.View>
       </Animated.View>
+      )}
     </View>
   );
 };
