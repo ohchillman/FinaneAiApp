@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Easing, Dimensions, Platform } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  FlatList, 
+  Animated, 
+  Easing, 
+  Dimensions, 
+  Platform 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Define colors directly as theme.js is not found
@@ -66,41 +76,44 @@ const DropdownFilter = ({
 
     // Animations
     if (isOpen) {
+      // Reset opacity before starting open animation
       opacityAnim.setValue(0);
       Animated.parallel([
-        Animated.timing(dropdownHeight, {
+        Animated.timing(dropdownHeight, { // Height animation (JS thread)
           toValue: contentHeight,
           duration: 250,
           easing: Easing.out(Easing.ease),
-          useNativeDriver: false,
+          useNativeDriver: false, // Height must use JS driver
         }),
-        Animated.timing(rotateAnim, {
+        Animated.timing(rotateAnim, { // Rotation animation (Native thread)
           toValue: 1,
           duration: 250,
           easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: true, // Transform can use native driver
         }),
-        Animated.timing(opacityAnim, {
+        Animated.timing(opacityAnim, { // Opacity animation (Native thread)
           toValue: 1,
           duration: 200,
-          delay: 50,
-          useNativeDriver: true,
+          delay: 50, // Slight delay for smoother appearance
+          useNativeDriver: true, // Opacity can use native driver
         })
       ]).start();
     } else {
+      // Use parallel for closing animations as well
       Animated.parallel([
-         Animated.timing(opacityAnim, {
+        Animated.timing(opacityAnim, { // Opacity animation (Native thread)
           toValue: 0,
-          duration: 150,
+          duration: 150, // Faster fade out
+          easing: Easing.in(Easing.ease),
           useNativeDriver: true,
         }),
-        Animated.timing(dropdownHeight, {
+        Animated.timing(dropdownHeight, { // Height animation (JS thread)
           toValue: 0,
           duration: 200,
           easing: Easing.in(Easing.ease),
           useNativeDriver: false,
         }),
-        Animated.timing(rotateAnim, {
+        Animated.timing(rotateAnim, { // Rotation animation (Native thread)
           toValue: 0,
           duration: 250,
           easing: Easing.out(Easing.ease),
@@ -108,12 +121,10 @@ const DropdownFilter = ({
         })
       ]).start();
     }
-  }, [isOpen, contentHeight]); // Rerun effect if isOpen or contentHeight changes
+    // Add opacityAnim to dependencies if its changes should trigger effect, though likely not needed here
+  }, [isOpen, contentHeight, dropdownHeight, rotateAnim, opacityAnim]); // Include animated values in dependencies
 
   const toggleDropdown = () => {
-    // If this dropdown is already open, close it.
-    // If another dropdown is open, close it and open this one.
-    // If no dropdown is open, open this one.
     setActiveDropdownId(isOpen ? null : id);
   };
 
@@ -128,15 +139,13 @@ const DropdownFilter = ({
   });
 
   return (
-    // Use a View wrapper to help with positioning and zIndex
     <View style={[styles.wrapper, style]}>
       <TouchableOpacity 
         ref={containerRef}
         style={styles.container} 
         onPress={toggleDropdown}
-        activeOpacity={0.8} // Slightly higher opacity on press
+        activeOpacity={0.8}
       >
-        {/* Combine Label and Value for better alignment */}
         <Text style={styles.valueText} numberOfLines={1} ellipsizeMode="tail">
           {label}: {value}
         </Text>
@@ -145,8 +154,7 @@ const DropdownFilter = ({
         </Animated.View>
       </TouchableOpacity>
 
-      {/* Dropdown List - Rendered conditionally but kept in layout for measurement */}
-      {/* Use absolute positioning for the dropdown list */}
+      {/* Dropdown List Container - Animates height (JS) */}
       <Animated.View 
         style={[
           styles.dropdown,
@@ -154,41 +162,39 @@ const DropdownFilter = ({
             top: dropdownPosition.top,
             left: dropdownPosition.left,
             width: dropdownPosition.width,
-            height: dropdownHeight, // Animated height
-            opacity: opacityAnim, // Animated opacity
-            // Ensure dropdown is above other elements
-            zIndex: isOpen ? 100 : -1, // High zIndex when open, negative when closed
+            height: dropdownHeight, // Animated height (JS)
+            // Remove opacity from here to avoid conflict
+            zIndex: isOpen ? 100 : -1, 
           }
         ]}
-        pointerEvents={isOpen ? 'auto' : 'none'} // Only allow interaction when open
+        pointerEvents={isOpen ? 'auto' : 'none'}
       >
-        <FlatList
-          data={options}
-          keyExtractor={(item) => item.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={styles.optionItem}
-              onPress={() => handleSelect(item)}
-            >
-              <Text 
-                style={[
-                  styles.optionText,
-                  item === value && styles.selectedOptionText // Highlight selected option
-                ]}
-                numberOfLines={1}
+        {/* Inner Container - Animates opacity (Native) */}
+        <Animated.View style={{ flex: 1, opacity: opacityAnim }}> 
+          <FlatList
+            data={options}
+            keyExtractor={(item) => item.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={styles.optionItem}
+                onPress={() => handleSelect(item)}
               >
-                {item}
-              </Text>
-              {/* Optional: Add checkmark for selected item if needed */}
-              {/* {item === value && (
-                <Ionicons name="checkmark" size={18} color={colors.primary} />
-              )} */}
-            </TouchableOpacity>
-          )}
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={false} // Hide scroll indicator for cleaner look
-          style={styles.list}
-        />
+                <Text 
+                  style={[
+                    styles.optionText,
+                    item === value && styles.selectedOptionText
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            )}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            style={styles.list}
+          />
+        </Animated.View>
       </Animated.View>
     </View>
   );
@@ -196,47 +202,46 @@ const DropdownFilter = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: 'relative', // Needed for absolute positioning of dropdown
-    zIndex: 1, // Default zIndex
+    position: 'relative', 
+    zIndex: 1, 
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Space between text and icon
-    backgroundColor: colors.dropdownBackground, // User specified background
-    borderRadius: 20, // Rounded corners like screenshot
-    paddingVertical: 10, // Adjust padding to match screenshot
-    paddingHorizontal: 15, // Adjust padding
-    // Remove shadows and elevation
+    justifyContent: 'space-between', 
+    backgroundColor: colors.dropdownBackground, 
+    borderRadius: 20, 
+    paddingVertical: 10, 
+    paddingHorizontal: 15, 
     shadowColor: 'transparent',
     elevation: 0,
   },
   valueText: {
-    fontSize: typography.fontSizes.sm, // Slightly smaller font size
-    color: colors.text, // User specified text color
+    fontSize: typography.fontSizes.sm, 
+    color: colors.text, 
     fontWeight: typography.fontWeights.medium,
-    flex: 1, // Take available space
-    marginRight: 8, // Space before icon
+    flex: 1, 
+    marginRight: 8, 
   },
   dropdown: {
     position: 'absolute',
-    backgroundColor: colors.dropdownBackground, // Same background as button
-    borderRadius: 10, // Slightly less rounded than button
+    backgroundColor: colors.dropdownBackground, 
+    borderRadius: 10, 
     overflow: 'hidden',
-    // Remove shadows and elevation
     shadowColor: 'transparent',
     elevation: 0,
-    borderWidth: Platform.OS === 'ios' ? 0.5 : 0, // Subtle border for iOS
+    borderWidth: Platform.OS === 'ios' ? 0.5 : 0, 
     borderColor: colors.border,
-    marginTop: 2, // Small gap from button
+    marginTop: 2, 
   },
   list: {
     width: '100%',
+    flex: 1, // Ensure FlatList takes up available space in Animated.View
   },
   optionItem: {
     paddingVertical: 10,
     paddingHorizontal: 15,
-    borderBottomWidth: 0, // Remove internal borders for cleaner look
+    borderBottomWidth: 0, 
   },
   optionText: {
     fontSize: typography.fontSizes.sm,
@@ -244,8 +249,8 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.regular,
   },
   selectedOptionText: {
-    fontWeight: typography.fontWeights.bold, // Make selected option bold
-    color: colors.primary, // Use primary color for selected text
+    fontWeight: typography.fontWeights.bold, 
+    color: colors.primary, 
   },
 });
 
