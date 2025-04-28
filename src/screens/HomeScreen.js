@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../theme';
 import Card from '../components/Card';
 import Input from '../components/Input';
@@ -28,6 +29,7 @@ const HomeScreen = () => {
   const { recognizeExpense, isRecognizing } = useAI();
   const { isListening, startListening, stopListening, getLatestResult } = useVoice();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [chartData, setChartData] = useState({
     labels: ['1D', '1W', '1M', '3M', '1Y'],
     datasets: [{ data: [0, 0, 0, 0, 0] }],
@@ -87,7 +89,7 @@ const HomeScreen = () => {
       </View>
 
       <View style={styles.content}>
-        <Card style={styles.expenseCard}>
+        <View style={styles.expenseSection}>
           <Text style={styles.expenseLabel}>Expense for period</Text>
           {isLoading ? (
             <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -100,59 +102,70 @@ const HomeScreen = () => {
                 <Text style={styles.expenseChangeText}>Last 30 Days</Text>
                 <Text style={styles.expenseChangePercent}>+12%</Text>
               </View>
-              
-              <ExpenseChart data={chartData} />
-              
-              <View style={styles.timeFilterContainer}>
-                <TouchableOpacity 
-                  style={styles.timeFilterOption}
-                  onPress={() => changePeriod('Day')}
-                >
-                  <Text style={[
-                    styles.timeFilterText, 
-                    selectedPeriod === 'Day' && styles.activeTimeFilterText
-                  ]}>1D</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.timeFilterOption}
-                  onPress={() => changePeriod('Week')}
-                >
-                  <Text style={[
-                    styles.timeFilterText, 
-                    selectedPeriod === 'Week' && styles.activeTimeFilterText
-                  ]}>1W</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.timeFilterOption}
-                  onPress={() => changePeriod('Month')}
-                >
-                  <Text style={[
-                    styles.timeFilterText, 
-                    selectedPeriod === 'Month' && styles.activeTimeFilterText
-                  ]}>1M</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.timeFilterOption}
-                  onPress={() => changePeriod('3M')}
-                >
-                  <Text style={[
-                    styles.timeFilterText, 
-                    selectedPeriod === '3M' && styles.activeTimeFilterText
-                  ]}>3M</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.timeFilterOption}
-                  onPress={() => changePeriod('Year')}
-                >
-                  <Text style={[
-                    styles.timeFilterText, 
-                    selectedPeriod === 'Year' && styles.activeTimeFilterText
-                  ]}>1Y</Text>
-                </TouchableOpacity>
-              </View>
             </>
           )}
-        </Card>
+        </View>
+        
+        <View style={styles.chartContainer}>
+          <ExpenseChart data={chartData} />
+          
+          <View style={styles.periodFilterContainer}>
+            <TouchableOpacity 
+              style={styles.periodFilterOption}
+              onPress={() => changePeriod('Day')}
+            >
+              <Text style={[
+                styles.periodFilterText, 
+                selectedPeriod === 'Day' && styles.activePeriodFilterText
+              ]}>1D</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.periodFilterOption}
+              onPress={() => changePeriod('Week')}
+            >
+              <Text style={[
+                styles.periodFilterText, 
+                selectedPeriod === 'Week' && styles.activePeriodFilterText
+              ]}>1W</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.periodFilterOption}
+              onPress={() => changePeriod('Month')}
+            >
+              <Text style={[
+                styles.periodFilterText, 
+                selectedPeriod === 'Month' && styles.activePeriodFilterText
+              ]}>1M</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.periodFilterOption}
+              onPress={() => changePeriod('3M')}
+            >
+              <Text style={[
+                styles.periodFilterText, 
+                selectedPeriod === '3M' && styles.activePeriodFilterText
+              ]}>3M</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.periodFilterOption}
+              onPress={() => changePeriod('Year')}
+            >
+              <Text style={[
+                styles.periodFilterText, 
+                selectedPeriod === 'Year' && styles.activePeriodFilterText
+              ]}>1Y</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        <View style={styles.timeFilterSection}>
+          <TimeFilter
+            options={['Day', 'Week', 'Month']}
+            selectedOption={selectedPeriod}
+            onSelect={changePeriod}
+            style={styles.timeFilter}
+          />
+        </View>
 
         <View style={styles.inputContainer}>
           <Input
@@ -170,20 +183,16 @@ const HomeScreen = () => {
             style={styles.input}
           />
           <Button 
-            title={isRecognizing ? "Recognizing..." : "Recognize"} 
+            title="Recognize" 
             onPress={() => handleRecognize()}
             loading={isRecognizing}
             disabled={!expenseText.trim() || isRecognizing}
             style={styles.recognizeButton}
           />
+          <Text style={styles.recognizeDescription}>
+            Automatically assign category based on description by AI
+          </Text>
         </View>
-
-        <TimeFilter
-          options={['Day', 'Week', 'Month']}
-          selectedOption={selectedPeriod}
-          onSelect={changePeriod}
-          style={styles.periodFilter}
-        />
       </View>
     </SafeAreaView>
   );
@@ -214,7 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: theme.spacing.lg,
   },
-  expenseCard: {
+  expenseSection: {
     marginTop: theme.spacing.md,
   },
   expenseLabel: {
@@ -242,34 +251,48 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeights.semiBold,
     color: theme.colors.success,
   },
-  timeFilterContainer: {
+  chartContainer: {
+    marginVertical: theme.spacing.md,
+    alignItems: 'center', // Center the chart horizontally
+  },
+  periodFilterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: theme.spacing.md,
+    width: '100%', // Ensure the filter takes full width
   },
-  timeFilterOption: {
+  periodFilterOption: {
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm,
   },
-  timeFilterText: {
+  periodFilterText: {
     fontSize: theme.typography.fontSizes.sm,
     color: theme.colors.textLight,
   },
-  activeTimeFilterText: {
+  activePeriodFilterText: {
     color: theme.colors.primary,
     fontWeight: theme.typography.fontWeights.semiBold,
   },
+  timeFilterSection: {
+    marginVertical: theme.spacing.md,
+  },
+  timeFilter: {
+    width: '100%',
+  },
   inputContainer: {
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.md,
   },
   input: {
     marginBottom: theme.spacing.sm,
   },
   recognizeButton: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
   },
-  periodFilter: {
-    marginBottom: theme.spacing.xl,
+  recognizeDescription: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textLight,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
   },
 });
 
