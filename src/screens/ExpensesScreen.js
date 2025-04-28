@@ -1,97 +1,94 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../theme';
 import ExpenseItem from '../components/ExpenseItem';
-import Input from '../components/Input';
 import TimeFilter from '../components/TimeFilter';
+import DropdownFilter from '../components/DropdownFilter'; // Import the new component
 import { useExpenses } from '../context/ExpenseContext';
+import { useUser } from '../context/UserContext';
 
-const ExpensesScreen = () => {
-  const [searchText, setSearchText] = useState('');
+const ExpensesScreen = ({ navigation }) => {
   const { 
     filteredExpenses, 
     selectedPeriod, 
     changePeriod, 
     isLoading,
-    removeExpense 
+    refreshExpenses
   } = useExpenses();
-  const [displayedExpenses, setDisplayedExpenses] = useState([]);
+  const { user, updateUser } = useUser();
+  const insets = useSafeAreaInsets();
 
-  // Filter expenses based on search text
-  useEffect(() => {
-    if (searchText.trim() === '') {
-      setDisplayedExpenses(filteredExpenses);
-    } else {
-      const filtered = filteredExpenses.filter(expense => 
-        expense.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        expense.category.toLowerCase().includes(searchText.toLowerCase()) ||
-        expense.description?.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setDisplayedExpenses(filtered);
-    }
-  }, [filteredExpenses, searchText]);
+  // Mock options for dropdowns - replace with actual logic if needed
+  const currencyOptions = ['USD', 'EUR', 'GBP'];
+  const periodOptions = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days'];
+  const [selectedCurrency, setSelectedCurrency] = useState(user.currency || 'USD');
+  const [selectedDateRange, setSelectedDateRange] = useState('Last 30 Days');
 
-  const handleExpensePress = (expense) => {
-    console.log('Expense pressed:', expense.id);
-    // Navigation to expense details could be added here
+  // Handle currency change
+  const handleCurrencyChange = (newCurrency) => {
+    setSelectedCurrency(newCurrency);
+    updateUser({ currency: newCurrency });
+    // Potentially refresh expenses or re-calculate amounts based on new currency
   };
 
-  const renderExpenseItem = ({ item }) => (
-    <ExpenseItem
-      title={item.title}
-      amount={item.amount}
-      category={item.category}
-      date={item.date}
-      onPress={() => handleExpensePress(item)}
-    />
-  );
+  // Handle date range change
+  const handleDateRangeChange = (newRange) => {
+    setSelectedDateRange(newRange);
+    // Potentially filter expenses based on the selected date range
+    // This might require more complex logic than the simple Day/Week/Month filter
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Expenses</Text>
+        {/* Settings icon can be added here if needed */}
       </View>
 
-      <View style={styles.content}>
-        <Input
-          value={searchText}
-          onChangeText={setSearchText}
-          placeholder="Search expenses..."
-          rightIcon={<Ionicons name="search-outline" size={24} color={theme.colors.primary} />}
-          style={styles.searchInput}
+      {/* Dropdown Filters */}
+      <View style={styles.filterRow}>
+        <DropdownFilter
+          label="Currency"
+          value={selectedCurrency}
+          options={currencyOptions}
+          onSelect={handleCurrencyChange}
         />
+        <DropdownFilter
+          label="Period"
+          value={selectedDateRange}
+          options={periodOptions}
+          onSelect={handleDateRangeChange}
+        />
+      </View>
 
+      {isLoading ? (
+        <ActivityIndicator style={styles.loader} size="large" color={theme.colors.primary} />
+      ) : (
+        <FlatList
+          data={filteredExpenses}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <ExpenseItem 
+              item={item} 
+              currency={selectedCurrency} 
+              onPress={() => navigation.navigate('Add', { expense: item })} 
+            />
+          )}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={<Text style={styles.emptyText}>No expenses found for this period.</Text>}
+          onRefresh={refreshExpenses}
+          refreshing={isLoading}
+        />
+      )}
+
+      {/* Time Filter at the bottom */}
+      <View style={[styles.bottomFilterContainer, { paddingBottom: insets.bottom + 8 }]}>
         <TimeFilter
           options={['Day', 'Week', 'Month']}
           selectedOption={selectedPeriod}
           onSelect={changePeriod}
-          style={styles.timeFilter}
         />
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
-        ) : displayedExpenses.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="receipt-outline" size={64} color={theme.colors.textLight} />
-            <Text style={styles.emptyText}>No expenses found</Text>
-            <Text style={styles.emptySubtext}>
-              {searchText.trim() !== '' 
-                ? 'Try a different search term' 
-                : 'Add some expenses to get started'}
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={displayedExpenses}
-            renderItem={renderExpenseItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-          />
-        )}
       </View>
     </SafeAreaView>
   );
@@ -103,9 +100,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.xl,
     paddingBottom: theme.spacing.md,
@@ -115,41 +109,34 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
   },
-  content: {
-    flex: 1,
+  filterRow: {
+    flexDirection: 'row',
     paddingHorizontal: theme.spacing.lg,
-  },
-  searchInput: {
     marginBottom: theme.spacing.md,
   },
-  timeFilter: {
-    marginBottom: theme.spacing.md,
+  loader: {
+    marginTop: 50,
   },
   listContent: {
-    paddingBottom: theme.spacing.xl,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: 80, // Add padding to avoid overlap with bottom filter
   },
   emptyText: {
-    fontSize: theme.typography.fontSizes.lg,
-    fontWeight: theme.typography.fontWeights.medium,
-    color: theme.colors.text,
-    marginTop: theme.spacing.md,
-  },
-  emptySubtext: {
+    textAlign: 'center',
+    marginTop: 50,
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textLight,
-    marginTop: theme.spacing.xs,
-    textAlign: 'center',
+  },
+  bottomFilterContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.background, // Ensure background matches
+    paddingTop: theme.spacing.sm, // Add some top padding
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
   },
 });
 
