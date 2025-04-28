@@ -262,3 +262,134 @@ export const generatePieChartData = (expenses) => {
     };
   });
 };
+
+// Generate unique ID for expenses
+export const generateUniqueId = () => {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
+};
+
+// Generate test data for debug mode
+export const generateTestExpenses = () => {
+  const EXPENSE_CATEGORIES = [
+    { id: '1', name: 'Food', icon: 'fast-food-outline' },
+    { id: '2', name: 'Transport', icon: 'car-outline' },
+    { id: '3', name: 'Shopping', icon: 'cart-outline' },
+    { id: '4', name: 'Entertainment', icon: 'film-outline' },
+    { id: '5', name: 'Bills', icon: 'receipt-outline' },
+    { id: '6', name: 'Health', icon: 'medical-outline' },
+    { id: '7', name: 'Education', icon: 'school-outline' },
+    { id: '8', name: 'Other', icon: 'cash-outline' },
+  ];
+  
+  const FOOD_DESCRIPTIONS = [
+    'Grocery shopping', 'Restaurant dinner', 'Coffee shop', 'Fast food lunch',
+    'Pizza delivery', 'Sushi takeout', 'Breakfast cafe', 'Bakery', 'Ice cream'
+  ];
+  
+  const TRANSPORT_DESCRIPTIONS = [
+    'Gas station', 'Uber ride', 'Taxi', 'Bus ticket', 'Train ticket',
+    'Parking fee', 'Car maintenance', 'Subway pass', 'Bike repair'
+  ];
+  
+  const SHOPPING_DESCRIPTIONS = [
+    'Clothing store', 'Electronics', 'Home goods', 'Online shopping',
+    'Department store', 'Bookstore', 'Furniture', 'Shoes', 'Accessories'
+  ];
+  
+  const ENTERTAINMENT_DESCRIPTIONS = [
+    'Movie tickets', 'Concert tickets', 'Streaming subscription', 'Game purchase',
+    'Theme park', 'Museum entry', 'Sports event', 'Theater show', 'Music album'
+  ];
+  
+  const BILLS_DESCRIPTIONS = [
+    'Electricity bill', 'Water bill', 'Internet bill', 'Phone bill',
+    'Rent payment', 'Insurance premium', 'Subscription service', 'Credit card payment'
+  ];
+  
+  const HEALTH_DESCRIPTIONS = [
+    'Pharmacy', 'Doctor visit', 'Gym membership', 'Health insurance',
+    'Dental care', 'Vitamins', 'Therapy session', 'Medical test'
+  ];
+  
+  const EDUCATION_DESCRIPTIONS = [
+    'Textbooks', 'Online course', 'Tuition fee', 'School supplies',
+    'Workshop fee', 'Language class', 'Certification exam', 'Educational app'
+  ];
+  
+  const OTHER_DESCRIPTIONS = [
+    'Gift purchase', 'Donation', 'Office supplies', 'Pet supplies',
+    'Home repair', 'Gardening', 'Cleaning service', 'Miscellaneous'
+  ];
+  
+  const DESCRIPTIONS_BY_CATEGORY = {
+    'Food': FOOD_DESCRIPTIONS,
+    'Transport': TRANSPORT_DESCRIPTIONS,
+    'Shopping': SHOPPING_DESCRIPTIONS,
+    'Entertainment': ENTERTAINMENT_DESCRIPTIONS,
+    'Bills': BILLS_DESCRIPTIONS,
+    'Health': HEALTH_DESCRIPTIONS,
+    'Education': EDUCATION_DESCRIPTIONS,
+    'Other': OTHER_DESCRIPTIONS
+  };
+  
+  // Generate random amount between min and max
+  const randomAmount = (min, max) => {
+    return (Math.random() * (max - min) + min).toFixed(2);
+  };
+  
+  // Generate random date within the last year
+  const randomDate = (daysBack = 365) => {
+    const today = new Date();
+    const pastDate = new Date(today);
+    pastDate.setDate(today.getDate() - Math.floor(Math.random() * daysBack));
+    
+    // Add random hours
+    pastDate.setHours(
+      Math.floor(Math.random() * 24),
+      Math.floor(Math.random() * 60),
+      Math.floor(Math.random() * 60)
+    );
+    
+    return pastDate.toISOString();
+  };
+  
+  // Generate random description for a category
+  const randomDescription = (category) => {
+    const descriptions = DESCRIPTIONS_BY_CATEGORY[category] || OTHER_DESCRIPTIONS;
+    return descriptions[Math.floor(Math.random() * descriptions.length)];
+  };
+  
+  // Generate 50-100 random expenses over the last year
+  const numExpenses = Math.floor(Math.random() * 51) + 50; // 50-100 expenses
+  const expenses = [];
+  
+  for (let i = 0; i < numExpenses; i++) {
+    const categoryObj = EXPENSE_CATEGORIES[Math.floor(Math.random() * EXPENSE_CATEGORIES.length)];
+    const category = categoryObj.name;
+    
+    // Different amount ranges for different categories
+    let amountRange = [5, 50]; // Default
+    
+    if (category === 'Bills') amountRange = [50, 200];
+    else if (category === 'Shopping') amountRange = [20, 150];
+    else if (category === 'Transport') amountRange = [5, 60];
+    else if (category === 'Food') amountRange = [10, 80];
+    
+    const expense = {
+      id: generateUniqueId(),
+      amount: randomAmount(amountRange[0], amountRange[1]),
+      category: category,
+      description: randomDescription(category),
+      date: randomDate(),
+      notes: Math.random() > 0.7 ? 'Test note for debug mode' : ''
+    };
+    
+    expenses.push(expense);
+  }
+  
+  // Sort by date, newest first
+  expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  return expenses;
+};

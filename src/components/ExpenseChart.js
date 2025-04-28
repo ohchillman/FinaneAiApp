@@ -55,6 +55,7 @@ const ExpenseChart = ({
     <View style={[styles.container, style]}>
       {isDebugMode && (
         <View style={styles.debugInfo}>
+          <Text style={styles.debugText}>Debug Mode Active</Text>
           <Text style={styles.debugText}>Chart Width: {screenWidth}px</Text>
           <Text style={styles.debugText}>Data Points: {data.datasets[0].data.length}</Text>
           <Text style={styles.debugText}>Labels: {data.labels.join(', ')}</Text>

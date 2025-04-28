@@ -1,12 +1,14 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { getExpenses, saveExpenses } from '../services/storageService';
-import { generateUniqueId } from '../utils/helpers';
+import { generateUniqueId, generateTestExpenses } from '../utils/helpers';
+import { useUser } from './UserContext';
 
 // Create context
 const ExpenseContext = createContext();
 
 // Provider component
 export const ExpenseProvider = ({ children }) => {
+  const { isDebugMode } = useUser();
   const [expenses, setExpenses] = useState([]);
   const [filteredExpenses, setFilteredExpenses] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('Month');
@@ -18,6 +20,15 @@ export const ExpenseProvider = ({ children }) => {
   useEffect(() => {
     loadExpenses();
   }, []);
+  
+  // Load test data when debug mode changes
+  useEffect(() => {
+    if (isDebugMode) {
+      loadTestData();
+    } else {
+      loadExpenses();
+    }
+  }, [isDebugMode]);
 
   // Apply filters whenever expenses, period, category, or search changes
   useEffect(() => {
@@ -34,6 +45,26 @@ export const ExpenseProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error loading expenses:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Load test data for debug mode
+  const loadTestData = async () => {
+    setIsLoading(true);
+    try {
+      // Generate test expenses
+      const testExpenses = generateTestExpenses();
+      
+      // Save to storage for persistence
+      await saveExpenses(testExpenses);
+      
+      // Update state
+      setExpenses(testExpenses);
+      console.log('Debug mode: Loaded test data with', testExpenses.length, 'expenses');
+    } catch (error) {
+      console.error('Error loading test data:', error);
     } finally {
       setIsLoading(false);
     }

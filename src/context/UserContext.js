@@ -44,13 +44,19 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // Get debug mode status
+  const isDebugMode = user.debugMode || false;
+  
   // Context value
   const value = {
     user,
     isLoading,
     updateUserProfile,
     refreshUserProfile: loadUserProfile,
-    isDebugMode: user.debugMode || false,
+    isDebugMode,
+    toggleDebugMode: async (enabled) => {
+      return await updateUserProfile({ debugMode: enabled });
+    },
   };
 
   return (

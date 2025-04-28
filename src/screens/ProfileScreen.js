@@ -8,13 +8,13 @@ import { useUser } from '../context/UserContext';
 import { clearAllData } from '../services/storageService';
 
 const ProfileScreen = () => {
-  const { user, isLoading, updateUserProfile } = useUser();
+  const { user, isLoading, toggleDebugMode } = useUser();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(user.debugMode || false);
 
-  const toggleDebugMode = async (value) => {
+  const handleToggleDebugMode = async (value) => {
     setIsDebugMode(value);
-    await updateUserProfile({ debugMode: value });
+    await toggleDebugMode(value);
   };
 
   const menuItems = [
@@ -115,7 +115,7 @@ const ProfileScreen = () => {
               trackColor={{ false: theme.colors.border, true: theme.colors.primaryLight }}
               thumbColor={isDebugMode ? theme.colors.primary : '#f4f3f4'}
               ios_backgroundColor={theme.colors.border}
-              onValueChange={toggleDebugMode}
+              onValueChange={handleToggleDebugMode}
               value={isDebugMode}
             />
           </View>
