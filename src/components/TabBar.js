@@ -156,6 +156,7 @@ const TabBar = ({ state, descriptors, navigation }) => {
               {label}
             </Text>
           </TouchableOpacity>
+          </Animated.View>
         );
       })}
     </View>
