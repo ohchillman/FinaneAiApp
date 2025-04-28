@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,11 @@ import { useUser } from '../context/UserContext';
 const TabBar = ({ state, descriptors, navigation }) => {
   const { user } = useUser();
   const insets = useSafeAreaInsets();
+  
+  // Create animated values for each tab button
+  const tabAnimations = useRef(
+    state.routes.map(() => new Animated.Value(1))
+  ).current;
   
   return (
     <View style={[
@@ -25,8 +30,45 @@ const TabBar = ({ state, descriptors, navigation }) => {
             : route.name;
 
         const isFocused = state.index === index;
+        
+        // Animation functions for button press
+        const onPressIn = () => {
+          Animated.spring(tabAnimations[index], {
+            toValue: 0.9,
+            friction: 5,
+            tension: 300,
+            useNativeDriver: true,
+          }).start();
+        };
+        
+        const onPressOut = () => {
+          Animated.spring(tabAnimations[index], {
+            toValue: 1,
+            friction: 3,
+            tension: 400,
+            useNativeDriver: true,
+          }).start();
+        };
 
         const onPress = () => {
+          // Trigger haptic feedback if available
+          if (route.name === 'Add') {
+            // More pronounced animation for the Add button
+            Animated.sequence([
+              Animated.timing(tabAnimations[index], {
+                toValue: 0.85,
+                duration: 50,
+                useNativeDriver: true,
+              }),
+              Animated.spring(tabAnimations[index], {
+                toValue: 1,
+                friction: 3,
+                tension: 400,
+                useNativeDriver: true,
+              })
+            ]).start();
+          }
+          
           const event = navigation.emit({
             type: 'tabPress',
             target: route.key,
@@ -60,29 +102,32 @@ const TabBar = ({ state, descriptors, navigation }) => {
         }
 
         return (
-          <TouchableOpacity
+          <Animated.View
             key={index}
-            activeOpacity={0.7}
-            onPress={onPress}
             style={[
               styles.tabButton,
-              route.name === 'Add' && styles.addButton,
+              { transform: [{ scale: tabAnimations[index] }] },
             ]}
           >
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={onPress}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              style={[
+                styles.touchableArea,
+                route.name === 'Add' && styles.addButton,
+                route.name === 'Add' && isFocused && styles.addButtonFocused,
+              ]}
+            >
             {route.name === 'Profile' ? (
               user.avatar ? (
                 <Image 
                   source={{ uri: user.avatar }} 
-                  style={[
-                    styles.profileImage,
-                    isFocused && styles.profileImageActive
-                  ]} 
+                  style={styles.profileImage} 
                 />
               ) : (
-                <View style={[
-                  styles.profilePlaceholder,
-                  isFocused && styles.profilePlaceholderActive
-                ]}>
+                <View style={styles.profilePlaceholder}>
                   <Text style={styles.profileInitial}>
                     {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </Text>
@@ -93,11 +138,11 @@ const TabBar = ({ state, descriptors, navigation }) => {
                 name={iconName}
                 size={route.name === 'Add' ? 24 : 22}
                 color={
-                  isFocused
-                    ? theme.colors.primary
-                    : route.name === 'Add'
+                  route.name === 'Add'
                     ? 'white'
-                    : theme.colors.textLight
+                    : isFocused
+                      ? theme.colors.primary
+                      : theme.colors.textLight
                 }
               />
             )}
@@ -132,15 +177,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
   },
+  touchableArea: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
   addButton: {
     backgroundColor: theme.colors.primary,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    marginTop: 5,
+    borderRadius: 25, // Increased to ensure perfect circle
+    width: 50, // Increased and made equal to height
+    height: 50, // Increased and made equal to width
+    marginTop: 0, // Adjusted for better vertical alignment
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
+    elevation: 4, // Add shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  addButtonFocused: {
+    // Keep the same appearance when focused
+    backgroundColor: theme.colors.primary, // Maintain the same color
+    transform: [{ scale: 1.05 }], // Slight scale effect instead of color change
   },
   tabLabel: {
     fontSize: 12,
@@ -159,11 +220,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  profileImageActive: {
-    borderColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: 'white',
+    // Add outer border effect
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   profilePlaceholder: {
     width: 24,
@@ -172,9 +236,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  profilePlaceholderActive: {
-    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: 'white',
+    // Add outer border effect
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   profileInitial: {
     fontSize: 12,
