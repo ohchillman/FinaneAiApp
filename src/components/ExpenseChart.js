@@ -7,8 +7,7 @@ import { useUser } from '../context/UserContext';
 
 // Calculate screen width dynamically for better responsiveness
 const getScreenWidth = () => {
-  const width = Dimensions.get('window').width;
-  return width - (theme.spacing.lg * 2); // Account for container padding
+  return Dimensions.get('window').width; // Use full screen width
 };
 
 const ExpenseChart = ({ 
@@ -53,14 +52,6 @@ const ExpenseChart = ({
   
   return (
     <View style={[styles.container, style]}>
-      {isDebugMode && (
-        <View style={styles.debugInfo}>
-          <Text style={styles.debugText}>Debug Mode Active</Text>
-          <Text style={styles.debugText}>Chart Width: {screenWidth}px</Text>
-          <Text style={styles.debugText}>Data Points: {data.datasets[0].data.length}</Text>
-          <Text style={styles.debugText}>Labels: {data.labels.join(', ')}</Text>
-        </View>
-      )}
       <LineChart
         data={data}
         width={screenWidth}
@@ -83,7 +74,7 @@ const ExpenseChart = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%', // Ensure container takes full width
-    alignItems: 'center', // Center the chart horizontally
+    alignItems: 'flex-start', // Align to start for proper stretching
     marginVertical: theme.spacing.md,
     paddingBottom: theme.spacing.md, // Add padding at bottom for time filter
   },
@@ -93,6 +84,7 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
     marginLeft: 0,
     marginRight: 0,
+    width: '100%', // Ensure chart takes full width
   },
   debugInfo: {
     backgroundColor: 'rgba(0, 0, 0, 0.05)',

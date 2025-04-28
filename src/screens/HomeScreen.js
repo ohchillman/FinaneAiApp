@@ -83,11 +83,6 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Personal</Text>
-        {isDebugMode && (
-          <View style={styles.debugIndicator}>
-            <Text style={styles.debugText}>DEBUG</Text>
-          </View>
-        )}
         <TouchableOpacity style={styles.settingsButton}>
           <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
         </TouchableOpacity>
