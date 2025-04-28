@@ -1,66 +1,144 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, SafeAreaView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated, Easing, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
 
 const DropdownFilter = ({ label, value, options, onSelect, style }) => {
-  const [modalVisible, setModalVisible] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownHeight = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const containerRef = useRef(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [maxHeight, setMaxHeight] = useState(200);
+  
+  // Calculate dropdown height based on number of options
+  const contentHeight = Math.min(options.length * 44, maxHeight);
+
+  useEffect(() => {
+    // Animation for opening/closing dropdown
+    Animated.parallel([
+      Animated.timing(dropdownHeight, {
+        toValue: isOpen ? contentHeight : 0,
+        duration: 300,
+        easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+        useNativeDriver: false,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: isOpen ? 1 : 0,
+        duration: 300,
+        easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: isOpen ? 1 : 0,
+        duration: 200,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, [isOpen, contentHeight]);
+
+  // Measure button position to place dropdown correctly
+  const measureButton = () => {
+    if (containerRef.current) {
+      containerRef.current.measure((x, y, width, height, pageX, pageY) => {
+        const screenHeight = Dimensions.get('window').height;
+        // Adjust max height based on space available
+        const spaceBelow = screenHeight - pageY - height;
+        setMaxHeight(Math.min(300, spaceBelow - 20));
+        
+        setDropdownPosition({
+          top: height,
+          left: 0,
+          width: width,
+        });
+      });
+    }
+  };
+
+  const toggleDropdown = () => {
+    if (!isOpen) {
+      measureButton();
+    }
+    setIsOpen(!isOpen);
+  };
 
   const handleSelect = (option) => {
     onSelect(option);
-    setModalVisible(false);
+    setIsOpen(false);
   };
 
+  // Rotate animation for the chevron icon
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg']
+  });
+
   return (
-    <>
+    <View style={[styles.wrapper, style]}>
       <TouchableOpacity 
-        style={[styles.container, style]} 
-        onPress={() => setModalVisible(true)}
+        ref={containerRef}
+        style={styles.container} 
+        onPress={toggleDropdown}
         activeOpacity={0.7}
       >
         <Text style={styles.label}>{label}:</Text>
-        <Text style={styles.value}>{value}</Text>
-        <Ionicons name="chevron-down" size={16} color={theme.colors.textLight} />
+        <Text style={styles.value} numberOfLines={1} ellipsizeMode="tail">{value}</Text>
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <Ionicons name="chevron-down" size={16} color={theme.colors.textLight} />
+        </Animated.View>
       </TouchableOpacity>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+      {/* Dropdown content */}
+      <Animated.View 
+        style={[
+          styles.dropdown, 
+          {
+            height: dropdownHeight,
+            opacity: opacityAnim,
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+            display: dropdownHeight._value === 0 ? 'none' : 'flex',
+          }
+        ]}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select {label}</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color={theme.colors.text} />
-              </TouchableOpacity>
-            </View>
-            
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity 
-                  style={styles.optionItem}
-                  onPress={() => handleSelect(item)}
-                >
-                  <Text style={styles.optionText}>{item}</Text>
-                  {item === value && (
-                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                  )}
-                </TouchableOpacity>
+        <FlatList
+          data={options}
+          keyExtractor={(item) => item.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              style={styles.optionItem}
+              onPress={() => handleSelect(item)}
+            >
+              <Text 
+                style={[
+                  styles.optionText,
+                  item === value && styles.selectedOptionText
+                ]}
+                numberOfLines={1}
+              >
+                {item}
+              </Text>
+              {item === value && (
+                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
               )}
-            />
-          </View>
-        </SafeAreaView>
-      </Modal>
-    </>
+            </TouchableOpacity>
+          )}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={true}
+          style={styles.list}
+        />
+      </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    position: 'relative',
+    zIndex: 100,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -69,6 +147,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginRight: 8, // Add some spacing between dropdowns
+    ...theme.shadows.light,
   },
   label: {
     fontSize: theme.typography.fontSizes.sm,
@@ -80,52 +159,38 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontWeight: theme.typography.fontWeights.medium,
     marginRight: 4,
-  },
-  modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: {
+  dropdown: {
+    position: 'absolute',
     backgroundColor: theme.colors.background,
-    margin: 20,
     borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    maxHeight: '80%',
+    overflow: 'hidden',
+    zIndex: 1000,
+    ...theme.shadows.medium,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  modalTitle: {
-    fontSize: theme.typography.fontSizes.lg,
-    fontWeight: theme.typography.fontWeights.bold,
-    color: theme.colors.text,
+  list: {
+    width: '100%',
   },
   optionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   optionText: {
-    fontSize: theme.typography.fontSizes.md,
+    fontSize: theme.typography.fontSizes.sm,
     color: theme.colors.text,
+    flex: 1,
+  },
+  selectedOptionText: {
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeights.medium,
   },
 });
 

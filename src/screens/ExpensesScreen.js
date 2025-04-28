@@ -56,19 +56,39 @@ const ExpensesScreen = ({ navigation }) => {
       </View>
 
       {/* Dropdown Filters */}
-      <View style={styles.filterRow}>
-        <DropdownFilter
-          label="Category"
-          value={selectedCategory}
-          options={categoryOptions}
-          onSelect={handleCategoryChange}
-        />
-        <DropdownFilter
-          label="Period"
-          value={selectedDateRange}
-          options={periodOptions}
-          onSelect={handleDateRangeChange}
-        />
+      <View style={styles.filterContainer}>
+        <View style={styles.filterRow}>
+          <DropdownFilter
+            label="Category"
+            value={selectedCategory}
+            options={categoryOptions}
+            onSelect={handleCategoryChange}
+            style={styles.filterItem}
+          />
+          <DropdownFilter
+            label="Period"
+            value={selectedDateRange}
+            options={periodOptions}
+            onSelect={handleDateRangeChange}
+            style={styles.filterItem}
+          />
+        </View>
+        <View style={styles.filterRow}>
+          <DropdownFilter
+            label="Sort By"
+            value="Date"
+            options={["Date", "Amount", "Category", "Name"]}
+            onSelect={() => {}}
+            style={styles.filterItem}
+          />
+          <DropdownFilter
+            label="View"
+            value="All"
+            options={["All", "Expenses", "Income"]}
+            onSelect={() => {}}
+            style={styles.filterItem}
+          />
+        </View>
       </View>
 
       {/* Search Input */}
@@ -128,10 +148,21 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
   },
-  filterRow: {
-    flexDirection: 'row',
+  filterContainer: {
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.sm,
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+  },
+  filterItem: {
+    marginRight: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+    flexGrow: 0,
+    width: 'auto',
   },
   searchContainer: {
     paddingHorizontal: theme.spacing.lg,
