@@ -2,14 +2,19 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../theme';
 import { useUser } from '../context/UserContext';
 
 const TabBar = ({ state, descriptors, navigation }) => {
   const { user } = useUser();
+  const insets = useSafeAreaInsets();
   
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      { paddingBottom: Math.max(insets.bottom, 8) }
+    ]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -118,8 +123,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    height: 60,
-    paddingBottom: 8,
+    paddingTop: 8,
     paddingHorizontal: 10,
   },
   tabButton: {

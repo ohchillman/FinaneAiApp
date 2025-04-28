@@ -183,7 +183,7 @@ const HomeScreen = () => {
         </View>
       </View>
       
-      <View style={[styles.bottomFilterContainer, { marginBottom: insets.bottom + 60 }]}>
+      <View style={[styles.bottomFilterContainer, { marginBottom: insets.bottom + 70 }]}>
         <TimeFilter
           options={['Day', 'Week', 'Month']}
           selectedOption={selectedPeriod}
