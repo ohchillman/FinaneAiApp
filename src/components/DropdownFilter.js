@@ -116,10 +116,19 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
         onPress={toggleDropdown}
         activeOpacity={0.7}
       >
-        <Text style={styles.label}>{label}:</Text>
-        <Text style={styles.value} numberOfLines={1} ellipsizeMode="tail">{value}</Text>
+        <Text style={value ? styles.selectedLabel : styles.label}>{label}:</Text>
+        <Text 
+          style={[
+            styles.value, 
+            value && styles.selectedOptionText
+          ]} 
+          numberOfLines={1} 
+          ellipsizeMode="tail"
+        >
+          {value || 'Выберите'}
+        </Text>
         <Animated.View style={{ transform: [{ rotate }] }}>
-          <Ionicons name="chevron-down" size={16} color={theme.colors.textLight} />
+          <Ionicons name="chevron-down" size={16} color={value ? theme.colors.primary : theme.colors.textLight} />
         </Animated.View>
       </TouchableOpacity>
 
@@ -176,7 +185,8 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'relative',
-    zIndex: 100,
+    zIndex: 9999,
+    elevation: 5, // For Android
   },
   container: {
     flexDirection: 'row',
@@ -205,10 +215,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     borderRadius: 12,
     overflow: 'hidden',
-    zIndex: 1000,
+    zIndex: 9999,
+    elevation: 6, // Higher than wrapper for Android
     ...theme.shadows.medium,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    marginTop: 4, // Add some space between button and dropdown
   },
   list: {
     width: '100%',
@@ -217,8 +229,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
@@ -230,6 +242,12 @@ const styles = StyleSheet.create({
   selectedOptionText: {
     color: theme.colors.primary,
     fontWeight: theme.typography.fontWeights.medium,
+  },
+  selectedLabel: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeights.bold,
+    marginRight: 4,
   },
 });
 

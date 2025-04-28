@@ -57,6 +57,23 @@ const ExpensesScreen = ({ navigation }) => {
 
       {/* Dropdown Filters */}
       <View style={styles.filterContainer}>
+        <View style={styles.filterHeaderRow}>
+          <Text style={styles.filterTitle}>Фильтры</Text>
+          <TouchableOpacity 
+            style={styles.resetButton}
+            onPress={() => {
+              // Reset all filters to default values
+              setSelectedCategory('All Categories');
+              setSelectedDateRange('Last 30 Days');
+              setSearchText('');
+              filterExpensesByCategory(null);
+              filterExpensesBySearch('');
+              changePeriod('Month');
+            }}
+          >
+            <Text style={styles.resetButtonText}>Сбросить все</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.filterRow}>
           <DropdownFilter
             label="Category"
@@ -151,6 +168,29 @@ const styles = StyleSheet.create({
   filterContainer: {
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
+  },
+  filterHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  filterTitle: {
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.medium,
+    color: theme.colors.text,
+  },
+  resetButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    ...theme.shadows.light,
+  },
+  resetButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.fontSizes.sm,
+    fontWeight: theme.typography.fontWeights.medium,
   },
   filterRow: {
     flexDirection: 'row',
