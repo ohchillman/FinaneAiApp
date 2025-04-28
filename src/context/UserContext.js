@@ -47,6 +47,16 @@ export const UserProvider = ({ children }) => {
   // Get debug mode status
   const isDebugMode = user.debugMode || false;
   
+  // Toggle debug mode with explicit state update
+  const toggleDebugMode = async (enabled) => {
+    console.log('UserContext: Toggling debug mode to', enabled);
+    const success = await updateUserProfile({ debugMode: enabled });
+    if (success) {
+      console.log('UserContext: Debug mode updated successfully');
+    }
+    return success;
+  };
+  
   // Context value
   const value = {
     user,
@@ -54,9 +64,7 @@ export const UserProvider = ({ children }) => {
     updateUserProfile,
     refreshUserProfile: loadUserProfile,
     isDebugMode,
-    toggleDebugMode: async (enabled) => {
-      return await updateUserProfile({ debugMode: enabled });
-    },
+    toggleDebugMode,
   };
 
   return (

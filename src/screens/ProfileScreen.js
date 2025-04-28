@@ -13,8 +13,19 @@ const ProfileScreen = () => {
   const [isDebugMode, setIsDebugMode] = useState(user.debugMode || false);
 
   const handleToggleDebugMode = async (value) => {
+    console.log('Toggle debug mode:', value);
     setIsDebugMode(value);
-    await toggleDebugMode(value);
+    const success = await toggleDebugMode(value);
+    console.log('Debug mode toggle success:', success);
+    
+    // Force reload the app state to ensure changes take effect
+    if (success) {
+      Alert.alert(
+        "Debug Mode " + (value ? "Enabled" : "Disabled"),
+        value ? "Test data has been loaded." : "Regular data has been restored.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   const menuItems = [

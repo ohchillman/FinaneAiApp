@@ -23,9 +23,12 @@ export const ExpenseProvider = ({ children }) => {
   
   // Load test data when debug mode changes
   useEffect(() => {
+    console.log('Debug mode changed:', isDebugMode);
     if (isDebugMode) {
+      console.log('Loading test data...');
       loadTestData();
     } else {
+      console.log('Loading regular expenses...');
       loadExpenses();
     }
   }, [isDebugMode]);
@@ -191,9 +194,19 @@ export const ExpenseProvider = ({ children }) => {
     0
   );
 
+  // Force refresh expenses when debug mode changes
+  const refreshExpensesWithDebugCheck = async () => {
+    console.log('Force refreshing expenses, debug mode:', isDebugMode);
+    if (isDebugMode) {
+      await loadTestData();
+    } else {
+      await loadExpenses();
+    }
+  };
+
   // Refresh expenses
   const refreshExpenses = () => {
-    loadExpenses();
+    refreshExpensesWithDebugCheck();
   };
 
   return (

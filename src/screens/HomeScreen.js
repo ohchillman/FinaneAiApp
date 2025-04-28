@@ -25,7 +25,7 @@ const HomeScreen = () => {
     isLoading,
     refreshExpenses
   } = useExpenses();
-  const { user } = useUser();
+  const { user, isDebugMode } = useUser();
   const { recognizeExpense, isRecognizing } = useAI();
   const { isListening, startListening, stopListening, getLatestResult } = useVoice();
   const navigation = useNavigation();
@@ -83,6 +83,11 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Personal</Text>
+        {isDebugMode && (
+          <View style={styles.debugIndicator}>
+            <Text style={styles.debugText}>DEBUG</Text>
+          </View>
+        )}
         <TouchableOpacity style={styles.settingsButton}>
           <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
         </TouchableOpacity>
@@ -200,6 +205,21 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  debugIndicator: {
+    backgroundColor: theme.colors.error,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.sm,
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    transform: [{ translateX: -25 }],
+  },
+  debugText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
