@@ -128,7 +128,7 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
           {value || 'Выберите'}
         </Text>
         <Animated.View style={{ transform: [{ rotate }] }}>
-          <Ionicons name="chevron-down" size={16} color={value ? theme.colors.primary : theme.colors.textLight} />
+          <Ionicons name="chevron-down" size={18} color="#6B46C1" />
         </Animated.View>
       </TouchableOpacity>
 
@@ -191,23 +191,24 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.inputBackground,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginRight: 8, // Add some spacing between dropdowns
+    backgroundColor: '#F2F0F7', // Light purple background
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 12, // Add some spacing between dropdowns
     ...theme.shadows.light,
   },
   label: {
-    fontSize: theme.typography.fontSizes.sm,
-    color: theme.colors.textLight,
-    marginRight: 4,
+    fontSize: theme.typography.fontSizes.md,
+    color: '#6B46C1', // Purple color for label
+    marginRight: 6,
+    fontWeight: theme.typography.fontWeights.medium,
   },
   value: {
-    fontSize: theme.typography.fontSizes.sm,
-    color: theme.colors.text,
+    fontSize: theme.typography.fontSizes.md,
+    color: '#6B46C1', // Purple color for value
     fontWeight: theme.typography.fontWeights.medium,
-    marginRight: 4,
+    marginRight: 8,
     flex: 1,
   },
   dropdown: {
@@ -215,12 +216,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     borderRadius: 12,
     overflow: 'hidden',
-    zIndex: 9999,
-    elevation: 6, // Higher than wrapper for Android
+    zIndex: 99999,
+    elevation: 10, // Higher than wrapper for Android
     ...theme.shadows.medium,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    marginTop: 4, // Add some space between button and dropdown
+    marginTop: 8, // Increased space between button and dropdown
   },
   list: {
     width: '100%',

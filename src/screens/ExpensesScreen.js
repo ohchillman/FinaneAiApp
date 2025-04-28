@@ -57,23 +57,6 @@ const ExpensesScreen = ({ navigation }) => {
 
       {/* Dropdown Filters */}
       <View style={styles.filterContainer}>
-        <View style={styles.filterHeaderRow}>
-          <Text style={styles.filterTitle}>Фильтры</Text>
-          <TouchableOpacity 
-            style={styles.resetButton}
-            onPress={() => {
-              // Reset all filters to default values
-              setSelectedCategory('All Categories');
-              setSelectedDateRange('Last 30 Days');
-              setSearchText('');
-              filterExpensesByCategory(null);
-              filterExpensesBySearch('');
-              changePeriod('Month');
-            }}
-          >
-            <Text style={styles.resetButtonText}>Сбросить все</Text>
-          </TouchableOpacity>
-        </View>
         <View style={styles.filterRow}>
           <DropdownFilter
             label="Category"
@@ -199,10 +182,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   filterItem: {
-    marginRight: theme.spacing.sm,
-    marginBottom: theme.spacing.xs,
+    marginRight: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
     flexGrow: 0,
     width: 'auto',
+    minWidth: 150,
   },
   searchContainer: {
     paddingHorizontal: theme.spacing.lg,
