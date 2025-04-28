@@ -157,6 +157,15 @@ const HomeScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
+        
+        <View style={styles.timeFilterSection}>
+          <TimeFilter
+            options={['Day', 'Week', 'Month']}
+            selectedOption={selectedPeriod}
+            onSelect={changePeriod}
+            style={styles.timeFilter}
+          />
+        </View>
 
         <View style={styles.inputContainer}>
           <Input
@@ -180,15 +189,10 @@ const HomeScreen = () => {
             disabled={!expenseText.trim() || isRecognizing}
             style={styles.recognizeButton}
           />
+          <Text style={styles.recognizeDescription}>
+            Automatically assign category based on description by AI
+          </Text>
         </View>
-      </View>
-      
-      <View style={[styles.bottomFilterContainer, { marginBottom: insets.bottom + 70 }]}>
-        <TimeFilter
-          options={['Day', 'Week', 'Month']}
-          selectedOption={selectedPeriod}
-          onSelect={changePeriod}
-        />
       </View>
     </SafeAreaView>
   );
@@ -267,23 +271,26 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: theme.typography.fontWeights.semiBold,
   },
+  timeFilterSection: {
+    marginVertical: theme.spacing.md,
+  },
+  timeFilter: {
+    width: '100%',
+  },
   inputContainer: {
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.md,
   },
   input: {
     marginBottom: theme.spacing.sm,
   },
   recognizeButton: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
   },
-  bottomFilterContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.md,
-    backgroundColor: theme.colors.background,
+  recognizeDescription: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textLight,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
   },
 });
 
