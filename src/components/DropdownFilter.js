@@ -77,21 +77,22 @@ const DropdownFilter = ({
 
     // Animations
     if (isOpen) {
+      // Reset opacity before starting open animation
       opacityAnim.setValue(0);
       Animated.parallel([
-        Animated.timing(dropdownHeight, { 
+        Animated.timing(dropdownHeight, { // Height animation (JS thread)
           toValue: contentHeight,
           duration: 250,
           easing: Easing.out(Easing.ease),
           useNativeDriver: false, 
         }),
-        Animated.timing(rotateAnim, { 
+        Animated.timing(rotateAnim, { // Rotation animation (Native thread)
           toValue: 1,
           duration: 250,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true, 
         }),
-        Animated.timing(opacityAnim, { 
+        Animated.timing(opacityAnim, { // Opacity animation (Native thread)
           toValue: 1,
           duration: 200,
           delay: 50, 
@@ -99,20 +100,21 @@ const DropdownFilter = ({
         })
       ]).start();
     } else {
+      // Use parallel for closing animations as well
       Animated.parallel([
-        Animated.timing(opacityAnim, { 
+        Animated.timing(opacityAnim, { // Opacity animation (Native thread)
           toValue: 0,
           duration: 150, 
           easing: Easing.in(Easing.ease),
           useNativeDriver: true,
         }),
-        Animated.timing(dropdownHeight, { 
+        Animated.timing(dropdownHeight, { // Height animation (JS thread)
           toValue: 0,
           duration: 200,
           easing: Easing.in(Easing.ease),
           useNativeDriver: false,
         }),
-        Animated.timing(rotateAnim, { 
+        Animated.timing(rotateAnim, { // Rotation animation (Native thread)
           toValue: 0,
           duration: 250,
           easing: Easing.out(Easing.ease),
@@ -167,7 +169,7 @@ const DropdownFilter = ({
         <TouchableWithoutFeedback onPress={closeModal}> 
           {/* Full screen overlay to catch outside taps */}
           <View style={StyleSheet.absoluteFill}> 
-            {/* Animated Container for the dropdown list itself */}
+            {/* Outer Animated Container for HEIGHT animation (JS thread) */}
             <Animated.View 
               style={[
                 styles.dropdown, // Use dropdown styles
@@ -176,34 +178,37 @@ const DropdownFilter = ({
                   top: dropdownPosition.top,
                   left: dropdownPosition.left,
                   width: dropdownPosition.width,
-                  height: dropdownHeight, // Animated height
-                  opacity: opacityAnim, // Animated opacity
+                  height: dropdownHeight, // Animated height (JS)
+                  // Opacity is handled by inner view
                 }
               ]}
             >
-              <FlatList
-                data={options}
-                keyExtractor={(item) => item.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={styles.optionItem}
-                    onPress={() => handleSelect(item)}
-                  >
-                    <Text 
-                      style={[
-                        styles.optionText,
-                        item === value && styles.selectedOptionText
-                      ]}
-                      numberOfLines={1}
+              {/* Inner Animated Container for OPACITY animation (Native thread) */}
+              <Animated.View style={{ flex: 1, opacity: opacityAnim }}>
+                <FlatList
+                  data={options}
+                  keyExtractor={(item) => item.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity 
+                      style={styles.optionItem}
+                      onPress={() => handleSelect(item)}
                     >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                nestedScrollEnabled
-                showsVerticalScrollIndicator={false}
-                style={styles.list}
-              />
+                      <Text 
+                        style={[
+                          styles.optionText,
+                          item === value && styles.selectedOptionText
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={false}
+                  style={styles.list}
+                />
+              </Animated.View>
             </Animated.View>
           </View>
         </TouchableWithoutFeedback>
