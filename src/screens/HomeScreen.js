@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     marginVertical: theme.spacing.md,
-    alignItems: 'flex-start', // Align to start for proper chart positioning
+    alignItems: 'center', // Center align for proper chart positioning
     width: '100%', // Ensure container takes full width
   },
   // Use timeFilter naming convention from remote

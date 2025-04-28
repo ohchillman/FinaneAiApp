@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
 import Card from '../components/Card';
@@ -10,6 +10,12 @@ import { clearAllData } from '../services/storageService';
 const ProfileScreen = () => {
   const { user, isLoading, updateUserProfile } = useUser();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isDebugMode, setIsDebugMode] = useState(user.debugMode || false);
+
+  const toggleDebugMode = async (value) => {
+    setIsDebugMode(value);
+    await updateUserProfile({ debugMode: value });
+  };
 
   const menuItems = [
     { id: '1', title: 'Account Settings', icon: 'person-outline' },
@@ -99,6 +105,21 @@ const ProfileScreen = () => {
         )}
 
         <View style={styles.menuContainer}>
+          {/* Debug Mode Toggle */}
+          <View style={styles.menuItem}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="bug-outline" size={24} color={theme.colors.primary} />
+              <Text style={styles.menuItemText}>Debug Mode</Text>
+            </View>
+            <Switch
+              trackColor={{ false: theme.colors.border, true: theme.colors.primaryLight }}
+              thumbColor={isDebugMode ? theme.colors.primary : '#f4f3f4'}
+              ios_backgroundColor={theme.colors.border}
+              onValueChange={toggleDebugMode}
+              value={isDebugMode}
+            />
+          </View>
+          
           {menuItems.map((item) => (
             <TouchableOpacity
               key={item.id}

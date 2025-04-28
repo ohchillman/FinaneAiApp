@@ -50,6 +50,7 @@ export const UserProvider = ({ children }) => {
     isLoading,
     updateUserProfile,
     refreshUserProfile: loadUserProfile,
+    isDebugMode: user.debugMode || false,
   };
 
   return (

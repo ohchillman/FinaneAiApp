@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import theme from '../theme';
+import { useUser } from '../context/UserContext';
 
 // Calculate screen width dynamically for better responsiveness
 const getScreenWidth = () => {
@@ -22,6 +23,8 @@ const ExpenseChart = ({
   height = 220, // Increased height for better visualization
   style = {},
 }) => {
+  const { isDebugMode } = useUser();
+  
   const chartConfig = {
     backgroundGradientFrom: theme.colors.background,
     backgroundGradientTo: theme.colors.background,
@@ -50,6 +53,13 @@ const ExpenseChart = ({
   
   return (
     <View style={[styles.container, style]}>
+      {isDebugMode && (
+        <View style={styles.debugInfo}>
+          <Text style={styles.debugText}>Chart Width: {screenWidth}px</Text>
+          <Text style={styles.debugText}>Data Points: {data.datasets[0].data.length}</Text>
+          <Text style={styles.debugText}>Labels: {data.labels.join(', ')}</Text>
+        </View>
+      )}
       <LineChart
         data={data}
         width={screenWidth}
@@ -72,7 +82,7 @@ const ExpenseChart = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%', // Ensure container takes full width
-    alignItems: 'flex-start', // Align to start instead of center
+    alignItems: 'center', // Center the chart horizontally
     marginVertical: theme.spacing.md,
     paddingBottom: theme.spacing.md, // Add padding at bottom for time filter
   },
@@ -80,9 +90,22 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     paddingRight: 0, // Remove default padding
     paddingLeft: 0,
-    marginLeft: 0, // Reset margin for proper alignment
+    marginLeft: 0,
     marginRight: 0,
   },
+  debugInfo: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+    width: '100%',
+  },
+  debugText: {
+    fontSize: 10,
+    color: theme.colors.primary,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: '500',
+  }
 });
 
 export default ExpenseChart;

@@ -33,6 +33,7 @@ export const DEFAULT_USER_PROFILE = {
   avatar: null,
   isPro: false,
   currency: '$',
+  debugMode: false,
 };
 
 // OpenRouter API configuration
