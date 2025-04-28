@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../theme';
 import Card from '../components/Card';
 import Input from '../components/Input';
@@ -28,6 +29,7 @@ const HomeScreen = () => {
   const { recognizeExpense, isRecognizing } = useAI();
   const { isListening, startListening, stopListening, getLatestResult } = useVoice();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [chartData, setChartData] = useState({
     labels: ['1D', '1W', '1M', '3M', '1Y'],
     datasets: [{ data: [0, 0, 0, 0, 0] }],
@@ -181,7 +183,7 @@ const HomeScreen = () => {
         </View>
       </View>
       
-      <View style={styles.bottomFilterContainer}>
+      <View style={[styles.bottomFilterContainer, { marginBottom: insets.bottom + 60 }]}>
         <TimeFilter
           options={['Day', 'Week', 'Month']}
           selectedOption={selectedPeriod}
@@ -275,9 +277,13 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   bottomFilterContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg,
-    marginBottom: 70, // Space for tab bar
+    paddingBottom: theme.spacing.md,
+    backgroundColor: theme.colors.background,
   },
 });
 

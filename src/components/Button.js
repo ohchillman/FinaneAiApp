@@ -76,15 +76,11 @@ const Button = ({ title, onPress, variant = 'primary', size = 'medium', loading 
         <Text style={getTextStyle()}>Loading...</Text>
       ) : (
         <View style={styles.buttonContent}>
-          {icon && iconPosition === 'left' && (
-            <View style={styles.iconLeft}>{icon}</View>
-          )}
-          <Text style={getTextStyle()}>{title}</Text>
-          {icon && iconPosition === 'right' && (
-            <View style={styles.iconRight}>{icon}</View>
-          )}
-          {renderProBadge()}
-          {renderStarIcon()}
+          <Text style={[getTextStyle(), styles.buttonTextAlign]}>{title}</Text>
+          <View style={styles.iconContainer}>
+            {renderStarIcon()}
+            {renderProBadge()}
+          </View>
         </View>
       )}
     </TouchableOpacity>
@@ -127,7 +123,9 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: theme.typography.fontWeights.medium,
-    textAlign: 'center',
+  },
+  buttonTextAlign: {
+    textAlign: 'left',
   },
   smallText: {
     fontSize: theme.typography.fontSizes.sm,
@@ -151,23 +149,22 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
   },
   buttonContent: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
   },
-  iconLeft: {
-    marginRight: 8,
-  },
-  iconRight: {
-    marginLeft: 8,
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   proBadge: {
-    position: 'absolute',
-    right: 10,
     backgroundColor: theme.colors.proBackground,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
+    marginLeft: 8,
   },
   proText: {
     color: theme.colors.proText,
@@ -175,8 +172,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeights.bold,
   },
   starIcon: {
-    position: 'absolute',
-    right: 40,
+    marginRight: 4,
   },
   starText: {
     fontSize: 14,
