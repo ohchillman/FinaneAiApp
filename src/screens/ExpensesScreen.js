@@ -13,6 +13,7 @@ import {
   Platform // Import Platform for potential OS-specific adjustments
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 // Assuming theme object might exist elsewhere or defining fallback colors
 const theme = {
   colors: {
@@ -159,7 +160,7 @@ const ExpensesScreen = ({ navigation }) => {
               value={selectedCategory}
               options={categoryOptions}
               onSelect={handleCategoryChange}
-              style={[styles.filterItem, styles.filterItemFlex]} // Added flex style
+              style={[styles.filterItem, styles.filterItemFlex]} // Apply flex and default margin
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
@@ -169,7 +170,8 @@ const ExpensesScreen = ({ navigation }) => {
               value={selectedDateRange}
               options={periodOptions}
               onSelect={handleDateRangeChange}
-              style={[styles.filterItem, styles.filterItemFlex]} // Added flex style
+              // Apply flex and remove right margin for the last item in this row
+              style={[styles.filterItem, styles.filterItemFlex, { marginRight: 0 }]} 
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
@@ -182,7 +184,8 @@ const ExpensesScreen = ({ navigation }) => {
               value={selectedSort}
               options={sortOptions}
               onSelect={handleSortChange}
-              style={[styles.filterItem, styles.filterItemThird]} // Specific width for Sort By
+              // Apply specific width/grow and remove right margin as it's the only item here
+              style={[styles.filterItem, styles.filterItemThird, { marginRight: 0 }]} 
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
@@ -270,23 +273,20 @@ const styles = StyleSheet.create({
     zIndex: 20, // Ensure row is above list content for dropdown overlap
   },
   filterItem: {
-    marginRight: theme.spacing.sm, // Default right margin
+    marginRight: theme.spacing.sm, // Default right margin for items unless overridden
     zIndex: 30, // Ensure individual dropdowns are high enough
   },
   filterItemFlex: {
     flex: 1, // Make Category and Period take equal width
-    marginRight: theme.spacing.sm, // Keep margin between them
+    // marginRight is handled individually below
   },
   filterItemThird: {
      // Adjust width to be roughly 1/3 or as needed
      // Let the component's internal padding define width, or set a specific width/flexGrow
      flexGrow: 0.6, // Adjust flex grow as needed, less than the full row items
-     marginRight: 0, // No margin needed if it's the last/only item in its conceptual space
+     // marginRight is handled individually below
   },
-  // Remove marginRight from the last item in each row to prevent extra space
-  filterRow > *:last-child {
-    marginRight: 0,
-  },
+  // Removed the invalid CSS selector
   searchContainer: {
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
