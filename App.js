@@ -13,6 +13,10 @@ LogBox.ignoreLogs([
   'Reanimated 2',
   'Failed prop type',
   'VirtualizedLists should never be nested',
+  // Ignore voice module errors
+  'native module',
+  'Native module cannot be null',
+  'Module @react-native-community/voice requires',
 ]);
 
 export default function App() {

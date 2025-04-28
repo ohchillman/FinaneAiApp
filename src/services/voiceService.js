@@ -1,72 +1,34 @@
-import Voice from '@react-native-community/voice';
-import { Platform } from 'react-native';
+// This file contains mock implementations for Expo Go compatibility
+// The actual voice recognition functionality is disabled
 
-// Initialize voice recognition
 export const initVoiceRecognition = () => {
-  Voice.onSpeechStart = () => console.log('Speech started');
-  Voice.onSpeechEnd = () => console.log('Speech ended');
-  Voice.onSpeechError = (error) => console.error('Speech error:', error);
+  console.log('Mock voice recognition initialized');
 };
 
-// Clean up voice recognition
 export const destroyVoiceRecognition = () => {
-  Voice.destroy().then(Voice.removeAllListeners);
+  console.log('Mock voice recognition destroyed');
 };
 
-// Start voice recognition
 export const startVoiceRecognition = async (locale = 'en-US') => {
-  try {
-    await Voice.start(locale);
-    return true;
-  } catch (error) {
-    console.error('Error starting voice recognition:', error);
-    return false;
-  }
+  console.log('Mock voice recognition started');
+  return true;
 };
 
-// Stop voice recognition
 export const stopVoiceRecognition = async () => {
-  try {
-    await Voice.stop();
-    return true;
-  } catch (error) {
-    console.error('Error stopping voice recognition:', error);
-    return false;
-  }
+  console.log('Mock voice recognition stopped');
+  return true;
 };
 
-// Cancel voice recognition
 export const cancelVoiceRecognition = async () => {
-  try {
-    await Voice.cancel();
-    return true;
-  } catch (error) {
-    console.error('Error canceling voice recognition:', error);
-    return false;
-  }
+  console.log('Mock voice recognition canceled');
+  return true;
 };
 
-// Check if voice recognition is available
 export const isVoiceRecognitionAvailable = async () => {
-  try {
-    const isAvailable = await Voice.isAvailable();
-    return isAvailable;
-  } catch (error) {
-    console.error('Error checking voice recognition availability:', error);
-    return false;
-  }
+  // Return true for testing purposes
+  return true;
 };
 
-// Get supported voice recognition locales
 export const getSupportedVoiceLocales = async () => {
-  try {
-    if (Platform.OS === 'android') {
-      const locales = await Voice.getSpeechRecognitionServices();
-      return locales;
-    }
-    return ['en-US']; // iOS doesn't provide a way to get supported locales
-  } catch (error) {
-    console.error('Error getting supported voice locales:', error);
-    return ['en-US'];
-  }
+  return ['en-US'];
 };
