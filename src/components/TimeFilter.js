@@ -2,22 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import theme from '../theme';
 
-const TimeFilter = ({ 
-  options = ['Day', 'Week', 'Month'], 
-  selectedOption, 
-  onSelect,
-  style = {},
-}) => {
+const TimeFilter = ({ options, selectedOption, onSelect, style }) => {
   return (
     <View style={[styles.container, style]}>
-      {options.map((option, index) => (
+      {options.map((option) => (
         <TouchableOpacity
-          key={index}
+          key={option}
           style={[
             styles.option,
             selectedOption === option && styles.selectedOption,
-            index === 0 && styles.firstOption,
-            index === options.length - 1 && styles.lastOption,
           ]}
           onPress={() => onSelect(option)}
         >
@@ -38,35 +31,29 @@ const TimeFilter = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.round,
-    padding: theme.spacing.xs,
+    backgroundColor: theme.colors.inputBackground,
+    borderRadius: 30,
+    padding: 4,
+    height: 44,
   },
   option: {
     flex: 1,
-    paddingVertical: theme.spacing.sm,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 25,
+    paddingVertical: 8,
   },
   selectedOption: {
     backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.round,
-    ...theme.shadows.light,
-  },
-  firstOption: {
-    marginLeft: 0,
-  },
-  lastOption: {
-    marginRight: 0,
+    ...theme.shadows.sm,
   },
   optionText: {
     fontSize: theme.typography.fontSizes.sm,
-    fontWeight: theme.typography.fontWeights.medium,
     color: theme.colors.textLight,
   },
   selectedOptionText: {
     color: theme.colors.text,
-    fontWeight: theme.typography.fontWeights.semiBold,
+    fontWeight: theme.typography.fontWeights.medium,
   },
 });
 

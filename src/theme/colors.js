@@ -1,18 +1,52 @@
 export const colors = {
-  primary: '#6C5CE7', // Purple color from the Figma design for buttons and highlights
-  secondary: '#F0EEFF', // Light purple for backgrounds
-  text: '#333333', // Dark text color
-  textLight: '#666666', // Light text color
-  background: '#FFFFFF', // White background
-  card: '#F8F8F8', // Light gray for cards
-  border: '#EEEEEE', // Border color
-  success: '#00B894', // Green for positive indicators
-  danger: '#FF7675', // Red for negative indicators
-  warning: '#FDCB6E', // Yellow for warnings
-  info: '#74B9FF', // Blue for information
-  chartLine: '#6C5CE7', // Purple for chart lines
-  chartGrid: '#EEEEEE', // Light gray for chart grid
-  chartBackground: '#FFFFFF', // White for chart background
-  tabActive: '#6C5CE7', // Active tab color
-  tabInactive: '#CCCCCC', // Inactive tab color
+  primary: '#6C5CE7',
+  primaryLight: '#A29BFE',
+  secondary: '#F1F1FE',
+  background: '#FFFFFF',
+  card: '#FFFFFF',
+  text: '#1E1E2D',
+  textLight: '#8E8E93',
+  border: '#E5E5EA',
+  success: '#4CD964',
+  error: '#FF3B30',
+  warning: '#FFCC00',
+  chartLine: '#6C5CE7',
+  chartGrid: '#F1F1FE',
+  shadow: '#000000',
+  inputBackground: '#F5F5F7',
+  proBackground: '#000000',
+  proText: '#FFFFFF',
+};
+
+export const shadows = {
+  sm: {
+    shadowColor: colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
 };

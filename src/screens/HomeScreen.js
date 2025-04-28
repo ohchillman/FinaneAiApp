@@ -109,50 +109,51 @@ const HomeScreen = () => {
         <View style={styles.chartContainer}>
           <ExpenseChart data={chartData} />
           
-          <View style={styles.periodFilterContainer}>
+          {/* Use timeFilter naming convention from remote */}
+          <View style={styles.timeFilterContainer}>
             <TouchableOpacity 
-              style={styles.periodFilterOption}
+              style={styles.timeFilterOption}
               onPress={() => changePeriod('Day')}
             >
               <Text style={[
-                styles.periodFilterText, 
-                selectedPeriod === 'Day' && styles.activePeriodFilterText
+                styles.timeFilterText, 
+                selectedPeriod === 'Day' && styles.activeTimeFilterText
               ]}>1D</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.periodFilterOption}
+              style={styles.timeFilterOption}
               onPress={() => changePeriod('Week')}
             >
               <Text style={[
-                styles.periodFilterText, 
-                selectedPeriod === 'Week' && styles.activePeriodFilterText
+                styles.timeFilterText, 
+                selectedPeriod === 'Week' && styles.activeTimeFilterText
               ]}>1W</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.periodFilterOption}
+              style={styles.timeFilterOption}
               onPress={() => changePeriod('Month')}
             >
               <Text style={[
-                styles.periodFilterText, 
-                selectedPeriod === 'Month' && styles.activePeriodFilterText
+                styles.timeFilterText, 
+                selectedPeriod === 'Month' && styles.activeTimeFilterText
               ]}>1M</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.periodFilterOption}
+              style={styles.timeFilterOption}
               onPress={() => changePeriod('3M')}
             >
               <Text style={[
-                styles.periodFilterText, 
-                selectedPeriod === '3M' && styles.activePeriodFilterText
+                styles.timeFilterText, 
+                selectedPeriod === '3M' && styles.activeTimeFilterText
               ]}>3M</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.periodFilterOption}
+              style={styles.timeFilterOption}
               onPress={() => changePeriod('Year')}
             >
               <Text style={[
-                styles.periodFilterText, 
-                selectedPeriod === 'Year' && styles.activePeriodFilterText
+                styles.timeFilterText, 
+                selectedPeriod === 'Year' && styles.activeTimeFilterText
               ]}>1Y</Text>
             </TouchableOpacity>
           </View>
@@ -253,23 +254,24 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     marginVertical: theme.spacing.md,
-    alignItems: 'center', // Center the chart horizontally
+    alignItems: 'center', // Keep the centering from local change
   },
-  periodFilterContainer: {
+  // Use timeFilter naming convention from remote
+  timeFilterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: theme.spacing.md,
     width: '100%', // Ensure the filter takes full width
   },
-  periodFilterOption: {
+  timeFilterOption: {
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm,
   },
-  periodFilterText: {
+  timeFilterText: {
     fontSize: theme.typography.fontSizes.sm,
     color: theme.colors.textLight,
   },
-  activePeriodFilterText: {
+  activeTimeFilterText: {
     color: theme.colors.primary,
     fontWeight: theme.typography.fontWeights.semiBold,
   },
@@ -297,3 +299,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+

@@ -7,25 +7,25 @@ const Input = ({
   value,
   onChangeText,
   placeholder,
-  secureTextEntry = false,
-  keyboardType = 'default',
-  error = null,
-  rightIcon = null,
-  onRightIconPress = null,
-  style = {},
-  multiline = false,
-  numberOfLines = 1,
+  secureTextEntry,
+  keyboardType,
+  multiline,
+  numberOfLines,
+  rightIcon,
+  onRightIconPress,
+  style,
+  inputStyle,
+  error,
 }) => {
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, error && styles.inputContainerError]}>
         <TextInput
           style={[
             styles.input,
-            multiline && { height: numberOfLines * 24, textAlignVertical: 'top' },
-            rightIcon && { paddingRight: 40 },
-            error && styles.inputError,
+            multiline && styles.multilineInput,
+            inputStyle,
           ]}
           value={value}
           onChangeText={onChangeText}
@@ -37,8 +37,8 @@ const Input = ({
           numberOfLines={numberOfLines}
         />
         {rightIcon && (
-          <TouchableOpacity 
-            style={styles.rightIcon} 
+          <TouchableOpacity
+            style={styles.rightIconContainer}
             onPress={onRightIconPress}
             disabled={!onRightIconPress}
           >
@@ -53,40 +53,45 @@ const Input = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
   },
   label: {
     fontSize: theme.typography.fontSizes.sm,
     fontWeight: theme.typography.fontWeights.medium,
     color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
+    marginBottom: 8,
   },
   inputContainer: {
-    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.inputBackground,
+    borderRadius: 30,
+    paddingHorizontal: 16,
+    height: 50,
+  },
+  inputContainerError: {
+    borderWidth: 1,
+    borderColor: theme.colors.error,
   },
   input: {
-    backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    flex: 1,
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.text,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    height: '100%',
   },
-  inputError: {
-    borderColor: theme.colors.danger,
+  multilineInput: {
+    height: 100,
+    textAlignVertical: 'top',
+    paddingTop: 12,
   },
-  rightIcon: {
-    position: 'absolute',
-    right: theme.spacing.md,
-    top: '50%',
-    transform: [{ translateY: -12 }],
+  rightIconContainer: {
+    marginLeft: 8,
+    padding: 4,
   },
   errorText: {
-    color: theme.colors.danger,
-    fontSize: theme.typography.fontSizes.xs,
-    marginTop: theme.spacing.xs,
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.error,
+    marginTop: 4,
   },
 });
 
