@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,8 +9,8 @@ import {
   Easing, 
   Dimensions, 
   Platform, 
-  Modal, // Import Modal
-  TouchableWithoutFeedback // Import TouchableWithoutFeedback
+  Modal,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -52,24 +52,58 @@ const DropdownFilter = ({
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const containerRef = useRef(null);
-  // Store position relative to the screen, not just parent
+  
+  // Pre-calculate dimensions to avoid jitter
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 }); 
   const [maxHeight, setMaxHeight] = useState(150);
+  const [hasMeasured, setHasMeasured] = useState(false);
   
+  // Calculate content height based on options
   const contentHeight = Math.min(options.length * 40, maxHeight);
 
+  // Measure button position on mount and window resize
+  useLayoutEffect(() => {
+    const measureButton = () => {
+      if (containerRef.current) {
+        containerRef.current.measureInWindow((pageX, pageY, width, height) => {
+          const screenHeight = Dimensions.get('window').height;
+          const spaceBelow = screenHeight - pageY - height;
+          const calculatedMaxHeight = Math.max(50, spaceBelow - 20);
+          
+          setMaxHeight(Math.min(150, calculatedMaxHeight));
+          setDropdownPosition({
+            top: pageY + height + 2,
+            left: pageX,
+            width: width,
+          });
+          setHasMeasured(true);
+        });
+      }
+    };
+
+    // Initial measurement
+    measureButton();
+
+    // Re-measure on dimension change
+    const dimensionsListener = Dimensions.addEventListener('change', measureButton);
+
+    return () => {
+      dimensionsListener.remove();
+    };
+  }, []);
+
+  // Re-measure when dropdown opens if needed
   useEffect(() => {
-    // Measure button position relative to the window when opening
-    if (containerRef.current && isOpen) {
+    if (isOpen && containerRef.current) {
       containerRef.current.measureInWindow((pageX, pageY, width, height) => {
         const screenHeight = Dimensions.get('window').height;
         const spaceBelow = screenHeight - pageY - height;
         const calculatedMaxHeight = Math.max(50, spaceBelow - 20);
-        setMaxHeight(Math.min(150, calculatedMaxHeight));
         
+        setMaxHeight(Math.min(150, calculatedMaxHeight));
         setDropdownPosition({
-          top: pageY + height + 2, // Position below the button, relative to screen
-          left: pageX, // Position relative to screen
+          top: pageY + height + 2,
+          left: pageX,
           width: width,
         });
       });
@@ -80,19 +114,19 @@ const DropdownFilter = ({
       // Reset opacity before starting open animation
       opacityAnim.setValue(0);
       Animated.parallel([
-        Animated.timing(dropdownHeight, { // Height animation (JS thread)
+        Animated.timing(dropdownHeight, {
           toValue: contentHeight,
           duration: 250,
           easing: Easing.out(Easing.ease),
           useNativeDriver: false, 
         }),
-        Animated.timing(rotateAnim, { // Rotation animation (Native thread)
+        Animated.timing(rotateAnim, {
           toValue: 1,
           duration: 250,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true, 
         }),
-        Animated.timing(opacityAnim, { // Opacity animation (Native thread)
+        Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
           delay: 50, 
@@ -100,21 +134,20 @@ const DropdownFilter = ({
         })
       ]).start();
     } else {
-      // Use parallel for closing animations as well
       Animated.parallel([
-        Animated.timing(opacityAnim, { // Opacity animation (Native thread)
+        Animated.timing(opacityAnim, {
           toValue: 0,
           duration: 150, 
           easing: Easing.in(Easing.ease),
           useNativeDriver: true,
         }),
-        Animated.timing(dropdownHeight, { // Height animation (JS thread)
+        Animated.timing(dropdownHeight, {
           toValue: 0,
           duration: 200,
           easing: Easing.in(Easing.ease),
           useNativeDriver: false,
         }),
-        Animated.timing(rotateAnim, { // Rotation animation (Native thread)
+        Animated.timing(rotateAnim, {
           toValue: 0,
           duration: 250,
           easing: Easing.out(Easing.ease),
@@ -143,10 +176,9 @@ const DropdownFilter = ({
   });
 
   return (
-    // Wrapper View - No complex zIndex needed here anymore
     <View style={[styles.wrapper, style]}>
       <TouchableOpacity 
-        ref={containerRef} // Ref to measure position
+        ref={containerRef}
         style={styles.container} 
         onPress={toggleDropdown}
         activeOpacity={0.8}
@@ -159,68 +191,65 @@ const DropdownFilter = ({
         </Animated.View>
       </TouchableOpacity>
 
-      {/* Modal for Dropdown List - Renders above everything */}
-      <Modal
-        transparent={true}
-        visible={isOpen}
-        onRequestClose={closeModal} // For Android back button
-        animationType="none" // Control animation manually
-      >
-        <TouchableWithoutFeedback onPress={closeModal}> 
-          {/* Full screen overlay to catch outside taps */}
-          <View style={StyleSheet.absoluteFill}> 
-            {/* Outer Animated Container for HEIGHT animation (JS thread) */}
-            <Animated.View 
-              style={[
-                styles.dropdown, // Use dropdown styles
-                {
-                  // Position based on screen coordinates
-                  top: dropdownPosition.top,
-                  left: dropdownPosition.left,
-                  width: dropdownPosition.width,
-                  height: dropdownHeight, // Animated height (JS)
-                  // Opacity is handled by inner view
-                }
-              ]}
-            >
-              {/* Inner Animated Container for OPACITY animation (Native thread) */}
-              <Animated.View style={{ flex: 1, opacity: opacityAnim }}>
-                <FlatList
-                  data={options}
-                  keyExtractor={(item) => item.toString()}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity 
-                      style={styles.optionItem}
-                      onPress={() => handleSelect(item)}
-                    >
-                      <Text 
-                        style={[
-                          styles.optionText,
-                          item === value && styles.selectedOptionText
-                        ]}
-                        numberOfLines={1}
+      {/* Only render Modal when measurements are ready */}
+      {hasMeasured && (
+        <Modal
+          transparent={true}
+          visible={isOpen}
+          onRequestClose={closeModal}
+          animationType="none"
+        >
+          <TouchableWithoutFeedback onPress={closeModal}> 
+            <View style={StyleSheet.absoluteFill}> 
+              {/* Outer Animated Container for HEIGHT animation (JS thread) */}
+              <Animated.View 
+                style={[
+                  styles.dropdown,
+                  {
+                    top: dropdownPosition.top,
+                    left: dropdownPosition.left,
+                    width: dropdownPosition.width,
+                    height: dropdownHeight,
+                  }
+                ]}
+              >
+                {/* Inner Animated Container for OPACITY animation (Native thread) */}
+                <Animated.View style={{ flex: 1, opacity: opacityAnim }}>
+                  <FlatList
+                    data={options}
+                    keyExtractor={(item) => item.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity 
+                        style={styles.optionItem}
+                        onPress={() => handleSelect(item)}
                       >
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  nestedScrollEnabled
-                  showsVerticalScrollIndicator={false}
-                  style={styles.list}
-                />
+                        <Text 
+                          style={[
+                            styles.optionText,
+                            item === value && styles.selectedOptionText
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator={false}
+                    style={styles.list}
+                  />
+                </Animated.View>
               </Animated.View>
-            </Animated.View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    // Removed position relative and zIndex
-  },
+  wrapper: {},
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -231,8 +260,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, 
     shadowColor: 'transparent',
     elevation: 0,
-    borderWidth: 0, // Ensure no border on the button itself
-    // Removed zIndex
+    borderWidth: 0,
   },
   valueText: {
     fontSize: typography.fontSizes.sm, 
@@ -241,23 +269,20 @@ const styles = StyleSheet.create({
     flex: 1, 
     marginRight: 8, 
   },
-  // Styles for the dropdown list container within the Modal
   dropdown: {
-    position: 'absolute', // Position absolutely within the Modal overlay
+    position: 'absolute',
     backgroundColor: colors.dropdownBackground, 
     borderRadius: 10, 
-    shadowColor: '#000', // Add subtle shadow for elevation effect
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 5, // Elevation for Android
-    borderWidth: 0, // Remove border from dropdown list container
-    // borderColor: colors.border, // No border color needed
-    overflow: 'hidden', // Keep overflow hidden for border radius
+    elevation: 5,
+    borderWidth: 0,
+    overflow: 'hidden',
   },
   list: {
     width: '100%',
-    // Removed flex: 1, height is controlled by Animated.View
   },
   optionItem: {
     paddingVertical: 10,
@@ -276,4 +301,3 @@ const styles = StyleSheet.create({
 });
 
 export default DropdownFilter;
-

@@ -14,8 +14,9 @@ export const ExpenseProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
-  const [dateRangeFilter, setDateRangeFilter] = useState('Last 30 Days'); // New state for date range
-  const [sortCriteria, setSortCriteria] = useState('Date'); // New state for sorting
+  // dateRangeFilter can now be a string ('Last 30 Days') or an object ({ type: 'custom', startDate, endDate })
+  const [dateRangeFilter, setDateRangeFilter] = useState('Last 30 Days'); 
+  const [sortCriteria, setSortCriteria] = useState('Date');
 
   // Load expenses from storage on mount
   useEffect(() => {
@@ -98,32 +99,49 @@ export const ExpenseProvider = ({ children }) => {
     setFilteredExpenses(result);
   };
 
-  // Filter expenses by selected date range
+  // Filter expenses by selected date range (string or custom object)
   const filterByDateRange = (expenseList, range) => {
     const now = new Date();
     let startDate = new Date();
-    startDate.setHours(0, 0, 0, 0); // Start from beginning of the day
+    let endDate = new Date(now); // Default end date is today
+    endDate.setHours(23, 59, 59, 999); // Set to end of the day
 
-    switch (range) {
-      case 'Last 7 Days':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'Last 30 Days':
-        startDate.setDate(now.getDate() - 30);
-        break;
-      case 'Last 90 Days':
-        startDate.setDate(now.getDate() - 90);
-        break;
-      case 'This Year':
-        startDate.setFullYear(now.getFullYear(), 0, 1); // January 1st of current year
-        break;
-      default:
-        // Default to Last 30 Days if range is unrecognized
-        startDate.setDate(now.getDate() - 30); 
+    if (typeof range === 'object' && range?.type === 'custom') {
+      // Handle custom range object
+      startDate = new Date(range.startDate);
+      startDate.setHours(0, 0, 0, 0); // Start of the selected start day
+      endDate = new Date(range.endDate);
+      endDate.setHours(23, 59, 59, 999); // End of the selected end day
+    } else if (typeof range === 'string') {
+      // Handle predefined string ranges
+      startDate.setHours(0, 0, 0, 0); // Start from beginning of the day
+      switch (range) {
+        case 'Last 7 Days':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'Last 30 Days':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        case 'Last 90 Days':
+          startDate.setDate(now.getDate() - 90);
+          break;
+        case 'This Year':
+          startDate.setFullYear(now.getFullYear(), 0, 1); // January 1st of current year
+          break;
+        default:
+          // Default to Last 30 Days if range string is unrecognized
+          startDate.setDate(now.getDate() - 30); 
+      }
+    } else {
+      // Fallback if range is neither object nor string (shouldn't happen)
+      startDate.setDate(now.getDate() - 30); 
     }
     
     // Ensure expense.date is a Date object before comparison
-    return expenseList.filter(expense => expense.date instanceof Date && expense.date >= startDate);
+    return expenseList.filter(expense => {
+      const expenseDate = expense.date instanceof Date ? expense.date : new Date(0);
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
   };
 
   // Sort expenses list based on criteria
@@ -247,7 +265,7 @@ export const ExpenseProvider = ({ children }) => {
     }
   };
 
-  // Change selected date range filter
+  // Change selected date range filter (accepts string or object)
   const changeDateRangeFilter = (range) => {
     setDateRangeFilter(range);
   };
@@ -293,7 +311,7 @@ export const ExpenseProvider = ({ children }) => {
       value={{
         expenses,
         filteredExpenses,
-        dateRangeFilter, // Expose current date range
+        dateRangeFilter, // Expose current date range (string or object)
         sortCriteria, // Expose current sort criteria
         isLoading,
         totalAmount,

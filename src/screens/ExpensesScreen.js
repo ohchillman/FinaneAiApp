@@ -13,6 +13,7 @@ import {
   Platform 
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 // Assuming theme object might exist elsewhere or defining fallback colors
 const theme = {
@@ -83,34 +84,51 @@ const ExpensesScreen = ({ navigation }) => {
     refreshExpenses,
     filterExpensesByCategory,
     filterExpensesBySearch,
-    // New functions from updated context
     changeDateRangeFilter,
     changeSortCriteria,
-    dateRangeFilter,
+    dateRangeFilter, // This might be a string or an object for custom range
     sortCriteria
   } = useExpenses();
   const { user } = useUser();
   const insets = useSafeAreaInsets();
 
-  // State for filters - now using values from context
+  // State for filters
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [selectedDateRange, setSelectedDateRange] = useState(dateRangeFilter || 'Last 30 Days');
   const [selectedSort, setSelectedSort] = useState(sortCriteria || 'Date');
   const [searchText, setSearchText] = useState('');
-  const [activeDropdownId, setActiveDropdownId] = useState(null); // State to track open dropdown
+  const [activeDropdownId, setActiveDropdownId] = useState(null);
+
+  // State for custom date range picker
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState('start'); // 'start' or 'end'
+  const [customStartDate, setCustomStartDate] = useState(null);
+  const [customEndDate, setCustomEndDate] = useState(null);
+  const [datePickerTitle, setDatePickerTitle] = useState('Select Start Date');
+
+  // Determine the display value for the Period dropdown
+  const getPeriodDisplayValue = () => {
+    if (typeof dateRangeFilter === 'object' && dateRangeFilter?.type === 'custom') {
+      const start = dateRangeFilter.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const end = dateRangeFilter.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `${start} - ${end}`;
+    }
+    return dateRangeFilter || 'Last 30 Days'; // Fallback to string value
+  };
+
+  const [selectedPeriodDisplay, setSelectedPeriodDisplay] = useState(getPeriodDisplayValue());
 
   // Sync local state with context when context values change
   useEffect(() => {
-    setSelectedDateRange(dateRangeFilter || 'Last 30 Days');
+    setSelectedPeriodDisplay(getPeriodDisplayValue());
   }, [dateRangeFilter]);
 
   useEffect(() => {
     setSelectedSort(sortCriteria || 'Date');
   }, [sortCriteria]);
 
-  // Options for dropdowns
+  // Options for dropdowns - Add 'Custom Range'
   const categoryOptions = ['All Categories', ...EXPENSE_CATEGORIES.map(cat => cat.name)];
-  const periodOptions = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days', 'This Year'];
+  const periodOptions = ['Last 7 Days', 'Last 30 Days', 'Last 90 Days', 'This Year', 'Custom Range'];
   const sortOptions = ["Date", "Amount", "Category", "Name"];
 
   // Handle category change
@@ -121,14 +139,23 @@ const ExpensesScreen = ({ navigation }) => {
 
   // Handle date range change
   const handleDateRangeChange = (newRange) => {
-    setSelectedDateRange(newRange);
-    changeDateRangeFilter(newRange); // Call context function to update date range filter
+    if (newRange === 'Custom Range') {
+      // Reset dates and open start date picker
+      setCustomStartDate(null);
+      setCustomEndDate(null);
+      setDatePickerMode('start');
+      setDatePickerTitle('Select Start Date');
+      setDatePickerVisibility(true);
+    } else {
+      // For predefined ranges, update context directly
+      changeDateRangeFilter(newRange);
+    }
   };
 
   // Handle sort change
   const handleSortChange = (newSort) => {
     setSelectedSort(newSort);
-    changeSortCriteria(newSort); // Call context function to update sort criteria
+    changeSortCriteria(newSort);
   };
 
   // Handle search text change
@@ -140,11 +167,48 @@ const ExpensesScreen = ({ navigation }) => {
   // Function to close all dropdowns
   const closeAllDropdowns = () => {
     setActiveDropdownId(null);
-    Keyboard.dismiss(); // Dismiss keyboard as well
+    Keyboard.dismiss();
   };
 
+  // --- Date Picker Modal Handlers ---
+  const showDatePicker = (mode) => {
+    setDatePickerMode(mode);
+    setDatePickerTitle(mode === 'start' ? 'Select Start Date' : 'Select End Date');
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleConfirmDate = (date) => {
+    hideDatePicker();
+    if (datePickerMode === 'start') {
+      setCustomStartDate(date);
+      // Automatically open end date picker after selecting start date
+      setTimeout(() => {
+        setDatePickerMode('end');
+        setDatePickerTitle('Select End Date');
+        setDatePickerVisibility(true);
+      }, Platform.OS === 'ios' ? 500 : 0); // Delay needed for iOS modal transition
+    } else {
+      setCustomEndDate(date);
+      // Ensure start date is set before applying
+      if (customStartDate) {
+        // Ensure end date is not before start date
+        const finalEndDate = date < customStartDate ? customStartDate : date;
+        // Apply custom range filter
+        changeDateRangeFilter({ 
+          type: 'custom', 
+          startDate: customStartDate, 
+          endDate: finalEndDate 
+        });
+      }
+    }
+  };
+  // --- End Date Picker Modal Handlers ---
+
   return (
-    // Wrap entire screen content with TouchableWithoutFeedback to close dropdowns on outside tap
     <TouchableWithoutFeedback onPress={closeAllDropdowns}>
       <SafeAreaView style={styles.container}>
         {/* Header */}
@@ -152,42 +216,40 @@ const ExpensesScreen = ({ navigation }) => {
           <Text style={styles.title}>Expenses</Text>
         </View>
 
-        {/* Dropdown Filters - Adjusted layout to match screenshot */}
+        {/* Dropdown Filters */}
         <View style={styles.filterContainer}>
           {/* Row 1: Category & Period */}
           <View style={styles.filterRow}>
             <DropdownFilter
-              id="category-filter" // Unique ID
+              id="category-filter"
               label="Category"
               value={selectedCategory}
               options={categoryOptions}
               onSelect={handleCategoryChange}
-              style={[styles.filterItem, styles.filterItemFlex]} // Apply flex and default margin
+              style={[styles.filterItem, styles.filterItemFlex]}
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
             <DropdownFilter
-              id="period-filter" // Unique ID
+              id="period-filter"
               label="Period"
-              value={selectedDateRange}
+              value={selectedPeriodDisplay} // Use display value
               options={periodOptions}
               onSelect={handleDateRangeChange}
-              // Apply flex and remove right margin for the last item in this row
-              style={[styles.filterItem, styles.filterItemFlex, { marginRight: 0 }]} 
+              style={[styles.filterItem, styles.filterItemFlex, { marginRight: 0 }]}
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
           </View>
-          {/* Row 2: Sort By (aligned left) */}
+          {/* Row 2: Sort By */}
           <View style={styles.filterRow}>
              <DropdownFilter
-              id="sort-filter" // Unique ID
+              id="sort-filter"
               label="Sort By"
               value={selectedSort}
               options={sortOptions}
               onSelect={handleSortChange}
-              // Apply specific width/grow and remove right margin as it's the only item here
-              style={[styles.filterItem, styles.filterItemThird, { marginRight: 0 }]} 
+              style={[styles.filterItem, styles.filterItemThird, { marginRight: 0 }]}
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
@@ -199,12 +261,12 @@ const ExpensesScreen = ({ navigation }) => {
           <ActivityIndicator style={styles.loader} size="large" color={theme.colors.primary} />
         ) : (
           <FlatList
-            data={filteredExpenses} // Use filtered/sorted expenses
+            data={filteredExpenses}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <ExpenseItem
                 item={item}
-                currency={user?.currency || '$'} // Use optional chaining and default currency
+                currency={user?.currency || '$'}
                 onPress={() => navigation.navigate('Add', { expense: item })}
               />
             )}
@@ -212,10 +274,48 @@ const ExpensesScreen = ({ navigation }) => {
             ListEmptyComponent={<Text style={styles.emptyText}>No expenses found.</Text>}
             onRefresh={refreshExpenses}
             refreshing={isLoading}
-            // Make list scrollable even when dropdown is open
             keyboardShouldPersistTaps="handled"
           />
         )}
+
+        {/* Date Picker Modal */}
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleConfirmDate}
+          onCancel={hideDatePicker}
+          date={datePickerMode === 'start' 
+            ? (customStartDate || new Date()) 
+            : (customEndDate || customStartDate || new Date())
+          }
+          maximumDate={datePickerMode === 'start' ? undefined : new Date()} // End date can't be in future
+          minimumDate={datePickerMode === 'end' ? customStartDate : undefined} // End date must be after start
+          headerTextIOS={datePickerTitle}
+          confirmTextIOS="Confirm"
+          cancelTextIOS="Cancel"
+          customHeaderIOS={() => (
+            <View style={styles.datePickerHeader}>
+              <Text style={styles.datePickerTitle}>{datePickerTitle}</Text>
+            </View>
+          )}
+          customCancelButtonIOS={({ onPress }) => (
+            <TouchableOpacity 
+              style={[styles.datePickerButton, styles.datePickerCancelButton]} 
+              onPress={onPress}
+            >
+              <Text style={styles.datePickerButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          )}
+          customConfirmButtonIOS={({ onPress }) => (
+            <TouchableOpacity 
+              style={[styles.datePickerButton, styles.datePickerConfirmButton]} 
+              onPress={onPress}
+            >
+              <Text style={[styles.datePickerButtonText, styles.datePickerConfirmText]}>Confirm</Text>
+            </TouchableOpacity>
+          )}
+        />
+
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -224,49 +324,42 @@ const ExpensesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9', // Slightly off-white background like screenshot
+    backgroundColor: '#F9F9F9',
   },
   header: {
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: Platform.OS === 'android' ? theme.spacing.xl : theme.spacing.lg, // Adjust top padding for Android status bar
-    paddingBottom: theme.spacing.sm, // Reduced bottom padding
-    flexDirection: 'row', // Added for potential settings icon alignment
+    paddingTop: Platform.OS === 'android' ? theme.spacing.xl : theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   title: {
-    fontSize: 34, // Larger font size like screenshot
+    fontSize: 34,
     fontWeight: theme.typography.fontWeights.bold,
-    color: '#000000', // Black title
+    color: '#000000',
   },
   settingsIcon: {
     padding: theme.spacing.sm,
   },
   filterContainer: {
     paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.md, // Add some padding below filters
-    // Ensure filter container allows dropdowns to overlay content below
+    paddingBottom: theme.spacing.md,
     zIndex: 10, 
   },
   filterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Distribute space between items
-    marginBottom: theme.spacing.sm, // Space between rows
-    zIndex: 20, // Ensure row is above list content for dropdown overlap
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.sm,
   },
   filterItem: {
-    marginRight: theme.spacing.sm, // Default right margin for items unless overridden
-    zIndex: 30, // Ensure individual dropdowns are high enough
+    marginRight: theme.spacing.sm,
   },
   filterItemFlex: {
-    flex: 1, // Make Category and Period take equal width
-    // marginRight is handled individually below
+    flex: 1,
   },
   filterItemThird: {
-     // Adjust width to be roughly 1/3 or as needed
-     // Let the component's internal padding define width, or set a specific width/flexGrow
-     flexGrow: 0.6, // Adjust flex grow as needed, less than the full row items
-     // marginRight is handled individually below
+     flexGrow: 0.6,
   },
   searchContainer: {
     paddingHorizontal: theme.spacing.lg,
@@ -281,19 +374,56 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   loader: {
-    flex: 1, // Take remaining space
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   listContent: {
     paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg, // Padding at the bottom of the list
+    paddingBottom: theme.spacing.lg,
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 50,
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textLight,
+  },
+  // Date Picker Styles
+  datePickerHeader: {
+    backgroundColor: '#EDE8F2',
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  datePickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#734F96',
+  },
+  datePickerButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginHorizontal: 10,
+    marginVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  datePickerCancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  datePickerConfirmButton: {
+    backgroundColor: '#EDE8F2',
+  },
+  datePickerButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333333',
+  },
+  datePickerConfirmText: {
+    color: '#734F96',
+    fontWeight: '600',
   },
 });
 
