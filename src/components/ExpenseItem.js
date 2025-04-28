@@ -3,10 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
 import { formatCurrency, formatDate } from '../utils/helpers';
-import { CATEGORY_ICONS } from '../utils/constants';
+import { EXPENSE_CATEGORIES } from '../utils/constants'; // Import EXPENSE_CATEGORIES instead
 
 const ExpenseItem = ({ item, onPress, currency }) => {
-  const iconName = CATEGORY_ICONS[item.category] || 'help-circle-outline';
+  // Find the category object from the array based on the item's category name
+  const categoryInfo = EXPENSE_CATEGORIES.find(cat => cat.name === item.category);
+  // Get the icon name, provide a fallback if not found
+  const iconName = categoryInfo ? categoryInfo.icon : 'help-circle-outline'; 
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
