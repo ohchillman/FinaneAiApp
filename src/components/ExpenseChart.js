@@ -50,10 +50,37 @@ const ExpenseChart = ({
   // Get current screen width for responsive rendering
   const screenWidth = getScreenWidth();
   
+  // Ensure data always starts and ends at edges by adding padding points if needed
+  const processedData = React.useMemo(() => {
+    if (!data || !data.datasets || !data.datasets[0] || !data.datasets[0].data) {
+      return data;
+    }
+    
+    const originalData = [...data.datasets[0].data];
+    
+    // Only modify if we have actual data
+    if (originalData.length > 0) {
+      // Create a new array with padding points at start and end
+      const paddedData = [originalData[0], ...originalData, originalData[originalData.length - 1]];
+      
+      return {
+        ...data,
+        datasets: [
+          {
+            ...data.datasets[0],
+            data: paddedData
+          }
+        ]
+      };
+    }
+    
+    return data;
+  }, [data]);
+  
   return (
     <View style={[styles.container, style]}>
       <LineChart
-        data={data}
+        data={processedData}
         width={screenWidth}
         height={height}
         chartConfig={chartConfig}
@@ -66,6 +93,8 @@ const ExpenseChart = ({
         style={styles.chart}
         withShadow={false} // Disable default shadow
         segments={4} // Reduce number of segments for smoother appearance
+        fromZero={false}
+        yAxisInterval={1}
       />
     </View>
   );

@@ -159,15 +159,6 @@ const HomeScreen = () => {
           </View>
         </View>
         
-        <View style={styles.timeFilterSection}>
-          <TimeFilter
-            options={['Day', 'Week', 'Month']}
-            selectedOption={selectedPeriod}
-            onSelect={changePeriod}
-            style={styles.timeFilter}
-          />
-        </View>
-
         <View style={styles.inputContainer}>
           <Input
             value={expenseText}
@@ -238,6 +229,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: theme.spacing.lg,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between', // Ensure proper spacing between elements
   },
   expenseSection: {
     marginTop: theme.spacing.md,
@@ -271,6 +265,7 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.md,
     alignItems: 'center', // Center align for proper chart positioning
     width: '100%', // Ensure container takes full width
+    flex: 0, // Prevent chart from expanding
   },
   // Use timeFilter naming convention from remote
   timeFilterContainer: {
@@ -299,7 +294,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputContainer: {
-    marginTop: theme.spacing.md,
+    marginTop: 'auto', // Push to bottom of container
+    marginBottom: theme.spacing.lg,
   },
   input: {
     marginBottom: theme.spacing.sm,
