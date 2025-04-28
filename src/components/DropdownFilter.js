@@ -16,29 +16,60 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
   const contentHeight = Math.min(options.length * 44, maxHeight);
 
   useEffect(() => {
-    // Separate JS and native animations to avoid conflicts
-    // Height animation (non-native)
-    Animated.timing(dropdownHeight, {
-      toValue: isOpen ? contentHeight : 0,
-      duration: 300,
-      easing: Easing.bezier(0.4, 0.0, 0.2, 1),
-      useNativeDriver: false,
-    }).start();
-    
-    // Native animations (rotation and opacity)
-    Animated.parallel([
+    if (isOpen) {
+      // When opening, immediately set opacity to 0 and then animate
+      opacityAnim.setValue(0);
+      
+      // Run animations when opening
+      Animated.parallel([
+        // Height animation (non-native)
+        Animated.timing(dropdownHeight, {
+          toValue: contentHeight,
+          duration: 300,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+          useNativeDriver: false,
+        }),
+        // Rotation animation (native)
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+          useNativeDriver: true,
+        }),
+        // Opacity animation (native) - slightly delayed
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          delay: 50, // Small delay to ensure height animation starts first
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      // When closing, animate opacity first, then height
+      Animated.sequence([
+        // First fade out
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        // Then collapse height
+        Animated.timing(dropdownHeight, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.bezier(0.4, 0.0, 0.2, 1),
+          useNativeDriver: false,
+        })
+      ]).start();
+      
+      // Animate rotation separately
       Animated.timing(rotateAnim, {
-        toValue: isOpen ? 1 : 0,
+        toValue: 0,
         duration: 300,
         easing: Easing.bezier(0.4, 0.0, 0.2, 1),
         useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: isOpen ? 1 : 0,
-        duration: 200,
-        useNativeDriver: true,
-      })
-    ]).start();
+      }).start();
+    }
   }, [isOpen, contentHeight]);
 
   // Measure button position to place dropdown correctly
@@ -93,20 +124,21 @@ const DropdownFilter = ({ label, value, options, onSelect, style }) => {
       </TouchableOpacity>
 
       {/* Dropdown content */}
-      <Animated.View 
-        style={[
-          styles.dropdown, 
-          {
-            height: dropdownHeight,
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: dropdownPosition.width,
-            display: dropdownHeight._value === 0 ? 'none' : 'flex',
-          }
-        ]}
-        // Apply opacity as a separate prop to avoid mixing native and non-native styles
-        // This ensures opacity uses native driver correctly
-      >
+      {/* Only render dropdown when isOpen is true */}
+      {isOpen && (
+        <Animated.View 
+          style={[
+            styles.dropdown, 
+            {
+              height: dropdownHeight,
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+            }
+          ]}
+          // Apply opacity as a separate prop to avoid mixing native and non-native styles
+          // This ensures opacity uses native driver correctly
+        >
         <Animated.View style={{opacity: opacityAnim}}>
           <FlatList
             data={options}
