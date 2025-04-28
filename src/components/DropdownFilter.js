@@ -125,7 +125,7 @@ const DropdownFilter = ({
             toValue: calculatedContentHeight,
             duration: 250,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1), // Smoother cubic bezier curve
-            useNativeDriver: false,
+            useNativeDriver: false, // Height must use JS driver
           }),
           // Then, once height is set, animate opacity and scale together
           Animated.parallel([
@@ -133,19 +133,19 @@ const DropdownFilter = ({
               toValue: 1,
               duration: 200,
               easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-              useNativeDriver: true,
+              useNativeDriver: true, // Opacity can use native driver
             }),
             Animated.timing(scaleAnim, {
               toValue: 1,
               duration: 200,
               easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-              useNativeDriver: true,
+              useNativeDriver: true, // Scale can use native driver
             }),
             Animated.timing(rotateAnim, {
               toValue: 1,
               duration: 200,
               easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-              useNativeDriver: true,
+              useNativeDriver: true, // Rotation can use native driver
             })
           ])
         ]).start();
@@ -156,25 +156,25 @@ const DropdownFilter = ({
             toValue: 0,
             duration: 150,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-            useNativeDriver: true,
+            useNativeDriver: true, // Opacity can use native driver
           }),
           Animated.timing(scaleAnim, {
             toValue: 0.95,
             duration: 150,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-            useNativeDriver: true,
+            useNativeDriver: true, // Scale can use native driver
           }),
           Animated.timing(dropdownHeight, {
             toValue: 0,
             duration: 200,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-            useNativeDriver: false,
+            useNativeDriver: false, // Height must use JS driver
           }),
           Animated.timing(rotateAnim, {
             toValue: 0,
             duration: 200,
             easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-            useNativeDriver: true,
+            useNativeDriver: true, // Rotation can use native driver
           })
         ]).start();
       }
@@ -243,14 +243,18 @@ const DropdownFilter = ({
                     top: dropdownPosition.top,
                     left: dropdownPosition.left,
                     width: dropdownPosition.width,
-                    height: dropdownHeight,
-                    transform: [{ scale: scaleAnim }], // Apply scale animation
-                    opacity: opacityAnim, // Apply opacity directly to container
+                    height: dropdownHeight, // JS-driven height animation
                   }
                 ]}
               >
-                {/* Content container */}
-                <View style={{ flex: 1 }}>
+                {/* Inner Animated Container for OPACITY and SCALE animations (Native thread) */}
+                <Animated.View 
+                  style={{ 
+                    flex: 1, 
+                    opacity: opacityAnim,
+                    transform: [{ scale: scaleAnim }]
+                  }}
+                >
                   <FlatList
                     data={options}
                     keyExtractor={(item) => item.toString()}
@@ -276,7 +280,7 @@ const DropdownFilter = ({
                     // Ensure list items are rendered immediately for height calculation
                     initialNumToRender={options.length} 
                   />
-                </View>
+                </Animated.View>
               </Animated.View>
             </View>
           </TouchableWithoutFeedback>
@@ -318,8 +322,6 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 0,
     overflow: 'hidden',
-    // Add origin for scale animation
-    transformOrigin: 'top center',
   },
   list: {
     width: '100%',
