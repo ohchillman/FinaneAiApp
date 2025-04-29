@@ -410,3 +410,151 @@ export const generateTestExpenses = () => {
   
   return expenses;
 };
+
+
+// Get start date, end date, number of days, and label for a given period
+export const getPeriodInfo = (period) => {
+  const now = new Date();
+  let startDate = new Date();
+  let endDate = new Date(now); // End date is always today (or end of today)
+  let days = 1;
+  let label = "Today";
+
+  // Set time to beginning of the day for start date
+  startDate.setHours(0, 0, 0, 0);
+  // Set time to end of the day for end date
+  endDate.setHours(23, 59, 59, 999);
+
+  switch (period) {
+    case 'Day':
+      // Start date is already set to beginning of today
+      days = 1;
+      label = "Today";
+      break;
+    case 'Week':
+      // Go back to the beginning of the week (assuming Sunday is the first day)
+      const currentDayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
+      startDate.setDate(now.getDate() - currentDayOfWeek);
+      startDate.setHours(0, 0, 0, 0);
+      // End date is end of today
+      days = currentDayOfWeek + 1; // Number of days passed in the current week
+      label = "This Week";
+      break;
+    case 'Month':
+      // Go back to the beginning of the month
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      startDate.setHours(0, 0, 0, 0);
+      // End date is end of today
+      days = now.getDate(); // Number of days passed in the current month
+      label = "This Month";
+      break;
+    // Add cases for '3M', 'Year' if needed, similar logic
+    default:
+      // Default to 'Day'
+      days = 1;
+      label = "Today";
+      break;
+  }
+
+  return { startDate, endDate, days, label };
+};
+
+// Generate Line Chart Data based on period
+export const generateLineChartData = (expenses, period, startDate, endDate) => {
+  if (!expenses || !expenses.length) {
+    return { labels: [], datasets: [{ data: [0] }] };
+  }
+
+  let labels = [];
+  let data = [];
+  const daysInRange = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+  switch (period) {
+    case 'Day':
+      // Show hours (e.g., 6-hour intervals)
+      labels = ['12AM', '6AM', '12PM', '6PM'];
+      data = [0, 0, 0, 0];
+      expenses.forEach(exp => {
+        const hour = new Date(exp.date).getHours();
+        if (hour < 6) data[0] += exp.amount;
+        else if (hour < 12) data[1] += exp.amount;
+        else if (hour < 18) data[2] += exp.amount;
+        else data[3] += exp.amount;
+      });
+      break;
+    case 'Week':
+      // Show days of the week
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      labels = [];
+      data = Array(daysInRange).fill(0);
+      for (let i = 0; i < daysInRange; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        labels.push(dayNames[d.getDay()]);
+        expenses.forEach(exp => {
+          const expDate = new Date(exp.date);
+          if (expDate >= d && expDate < new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
+            data[i] += exp.amount;
+          }
+        });
+      }
+      break;
+    case 'Month':
+      // Show days of the month (e.g., 5-day intervals or specific dates)
+      labels = [];
+      data = [];
+      const interval = Math.max(1, Math.floor(daysInRange / 5)); // Aim for ~5-6 labels
+      for (let i = 0; i < daysInRange; i += interval) {
+          const d = new Date(startDate);
+          d.setDate(startDate.getDate() + i);
+          labels.push(`${d.getDate()}`); // Just the day number
+          let sumForInterval = 0;
+          const intervalEndDate = new Date(d.getTime() + interval * 24 * 60 * 60 * 1000);
+          expenses.forEach(exp => {
+              const expDate = new Date(exp.date);
+              if (expDate >= d && expDate < intervalEndDate) {
+                  sumForInterval += exp.amount;
+              }
+          });
+          data.push(sumForInterval);
+      }
+       // Ensure the last day is included if not covered by intervals
+      if ((daysInRange -1) % interval !== 0) {
+          const lastStartDate = new Date(startDate);
+          lastStartDate.setDate(startDate.getDate() + Math.floor((daysInRange-1)/interval)*interval);
+          labels.push(`${endDate.getDate()}`);
+          let sumForLast = 0;
+           expenses.forEach(exp => {
+              const expDate = new Date(exp.date);
+              if (expDate >= lastStartDate && expDate <= endDate) {
+                  sumForLast += exp.amount;
+              }
+          });
+          data.push(sumForLast);
+      }
+      break;
+    default:
+      return { labels: [], datasets: [{ data: [0] }] };
+  }
+
+  // Ensure data has at least one point if labels exist
+  if (labels.length > 0 && data.length === 0) {
+      data = [0];
+  }
+  // Ensure labels and data match length, pad data if needed
+  if (labels.length > data.length) {
+      data = data.concat(Array(labels.length - data.length).fill(0));
+  }
+  if (data.length > labels.length && labels.length > 0) {
+      data = data.slice(0, labels.length);
+  }
+  // If no data and no labels, return default
+  if (labels.length === 0) {
+       return { labels: [], datasets: [{ data: [0] }] };
+  }
+
+  return {
+    labels,
+    datasets: [{ data: data.map(v => Math.round(v)) }] // Round amounts for chart
+  };
+};
