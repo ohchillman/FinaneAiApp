@@ -246,7 +246,6 @@ const AnalyticsScreen = () => {
     </SafeAreaView>
   );
 };
-};
 
 const styles = StyleSheet.create({
   container: {
