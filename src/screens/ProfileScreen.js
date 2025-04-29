@@ -169,10 +169,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
   },
   title: {
-    fontSize: theme.typography.fontSizes.xxl,
+    fontSize: theme.typography.fontSizes.xxxl,
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
   },
@@ -207,10 +207,10 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: theme.typography.fontSizes.xxxl,
     fontWeight: theme.typography.fontWeights.bold,
-    color: 'white',
+    color: theme.colors.card,
   },
   userName: {
-    fontSize: theme.typography.fontSizes.xl,
+    fontSize: theme.typography.fontSizes.xxl,
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
     marginBottom: theme.spacing.xs,
@@ -222,6 +222,8 @@ const styles = StyleSheet.create({
   proCard: {
     backgroundColor: theme.colors.secondary,
     marginBottom: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
   },
   proCardContent: {
     flexDirection: 'row',

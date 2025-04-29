@@ -200,10 +200,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
   },
   title: {
-    fontSize: theme.typography.fontSizes.xxl,
+    fontSize: theme.typography.fontSizes.xxxl,
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
   },
@@ -213,6 +213,11 @@ const styles = StyleSheet.create({
   },
   inputCard: {
     marginTop: theme.spacing.md,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   expenseInput: {
     marginBottom: theme.spacing.sm,
@@ -223,6 +228,11 @@ const styles = StyleSheet.create({
   detailsCard: {
     marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   detailInput: {
     marginBottom: theme.spacing.md,
@@ -230,7 +240,7 @@ const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: theme.typography.fontSizes.sm,
     fontWeight: theme.typography.fontWeights.medium,
-    color: theme.colors.text,
+    color: theme.colors.textLight,
     marginBottom: theme.spacing.xs,
   },
   categoriesContainer: {

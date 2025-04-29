@@ -20,7 +20,7 @@ const ExpenseItem = ({ item, onPress, currency }) => {
         <Text style={styles.category}>{item.category}</Text>
         <Text style={styles.date}>{formatDate(item.date)}</Text>
       </View>
-      <Text style={styles.amount}>{formatCurrency(item.amount, currency)}</Text>
+      <Text style={styles.amount}>-{formatCurrency(item.amount, currency)}</Text>
     </TouchableOpacity>
   );
 };
@@ -30,16 +30,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   iconContainer: {
-    backgroundColor: theme.colors.inputBackground,
-    borderRadius: 12, // More rounded corners
-    padding: 12,
+    backgroundColor: theme.colors.secondary,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.sm,
     marginRight: theme.spacing.md,
-    width: 48, // Fixed width
-    height: 48, // Fixed height
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -51,16 +52,16 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSizes.md,
     fontWeight: theme.typography.fontWeights.medium,
     color: theme.colors.text,
-    marginBottom: 2,
+    marginBottom: theme.spacing.xs,
   },
   date: {
     fontSize: theme.typography.fontSizes.sm,
     color: theme.colors.textLight,
   },
   amount: {
-    fontSize: theme.typography.fontSizes.md,
-    fontWeight: theme.typography.fontWeights.medium,
-    color: theme.colors.success, // Use success color for amount
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.semiBold,
+    color: theme.colors.text,
   },
 });
 

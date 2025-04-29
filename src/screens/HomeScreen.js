@@ -224,10 +224,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
   },
   title: {
-    fontSize: theme.typography.fontSizes.xxl,
+    fontSize: theme.typography.fontSizes.xxxl,
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
   },
@@ -239,14 +239,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between', // Ensure proper spacing between elements
+    justifyContent: 'space-between',
   },
   expenseSection: {
     marginTop: theme.spacing.md,
   },
   expenseLabel: {
     fontSize: theme.typography.fontSizes.md,
-    color: theme.colors.text,
+    color: theme.colors.textLight,
     marginBottom: theme.spacing.xs,
   },
   expenseAmount: {

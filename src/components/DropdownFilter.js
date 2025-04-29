@@ -16,38 +16,16 @@ import {
   UIManager
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import theme from '../theme';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Define colors directly as theme.js is not found
-const colors = {
-  primary: '#734F96',
-  background: '#FFFFFF',
-  dropdownBackground: '#EDE8F2',
-  text: '#734F96',
-  border: '#D1D5DB',
-  white: '#FFFFFF',
-};
-
-const typography = {
-  fontSizes: {
-    sm: 14,
-    md: 16,
-    lg: 18,
-  },
-  fontWeights: {
-    regular: '400',
-    medium: '500',
-    bold: '700',
-  },
-};
-
-const ITEM_HEIGHT = 40; // Define item height as a constant
-const DROPDOWN_MARGIN = 10; // Increased margin between button and dropdown
-const MEASUREMENT_DELAY = 150; // Longer delay for more reliable measurements
+const ITEM_HEIGHT = 40;
+const DROPDOWN_MARGIN = 10;
+const MEASUREMENT_DELAY = 150;
 
 const DropdownFilter = ({ 
   id, 
@@ -285,13 +263,13 @@ const DropdownFilter = ({
       keyExtractor={(item) => item.toString()}
       renderItem={({ item }) => (
         <TouchableOpacity 
-          style={styles.optionItem}
+          style={styles.dropdownItem}
           onPress={() => handleSelect(item)}
         >
           <Text 
             style={[
-              styles.optionText,
-              item === value && styles.selectedOptionText
+              styles.dropdownItemText,
+              item === value && styles.selectedItemText
             ]}
             numberOfLines={1}
           >
@@ -301,30 +279,30 @@ const DropdownFilter = ({
       )}
       scrollEnabled={false}
       showsVerticalScrollIndicator={false}
-      style={styles.list}
+      style={styles.dropdown}
       initialNumToRender={options.length}
       removeClippedSubviews={false}
     />
   );
 
   return (
-    <View style={[styles.wrapper, style]}>
+    <View style={[styles.container, style]}>
       <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
         <TouchableOpacity 
           ref={containerRef}
-          style={styles.container} 
+          style={styles.button} 
           onPress={toggleDropdown}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
           activeOpacity={0.8}
           disabled={isAnimating}
         >
-          <Text style={styles.valueText} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={styles.buttonText} numberOfLines={1} ellipsizeMode="tail">
             {label}: {value}
           </Text>
           {hasMeasured ? (
             <Animated.View style={{ transform: [{ rotate }] }}>
-              <Ionicons name="chevron-down" size={20} color={colors.primary} />
+              <Ionicons name="chevron-down" size={20} color={theme.colors.primary} />
             </Animated.View>
           ) : (
             <View style={{ width: 20 }} />
@@ -366,56 +344,62 @@ const DropdownFilter = ({
 };
 
 const styles = StyleSheet.create({
-  wrapper: {},
   container: {
+    position: 'relative',
+  },
+  button: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', 
-    backgroundColor: colors.dropdownBackground, 
-    borderRadius: 20, 
-    paddingVertical: 10, 
-    paddingHorizontal: 15, 
-    shadowColor: 'transparent',
-    elevation: 0,
-    borderWidth: 0,
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    minHeight: 44,
   },
-  valueText: {
-    fontSize: typography.fontSizes.sm, 
-    color: colors.text, 
-    fontWeight: typography.fontWeights.medium,
-    flex: 1, 
-    marginRight: 8, 
+  buttonText: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.text,
+    fontWeight: theme.typography.fontWeights.medium,
+    marginRight: theme.spacing.sm,
+    flex: 1,
   },
   dropdown: {
     position: 'absolute',
-    backgroundColor: colors.dropdownBackground, 
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.20,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
+    ...theme.shadows.medium,
+    zIndex: 1000,
     overflow: 'hidden',
   },
-  list: {
-    width: '100%',
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    minHeight: 44,
   },
-  optionItem: {
-    height: ITEM_HEIGHT,
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-    borderBottomWidth: 0, 
+  dropdownItemText: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.text,
+    fontWeight: theme.typography.fontWeights.regular,
   },
-  optionText: {
-    fontSize: typography.fontSizes.sm,
-    color: colors.text,
-    fontWeight: typography.fontWeights.regular,
+  selectedItemText: {
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeights.medium,
   },
-  selectedOptionText: {
-    fontWeight: typography.fontWeights.bold, 
-    color: colors.primary, 
+  icon: {
+    marginLeft: theme.spacing.sm,
+  },
+  label: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textLight,
+    marginBottom: theme.spacing.xs,
   },
 });
 

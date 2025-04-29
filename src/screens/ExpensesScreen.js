@@ -14,65 +14,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, CalendarList } from 'react-native-calendars';
-
-// Assuming theme object might exist elsewhere or defining fallback colors
-const theme = {
-  colors: {
-    background: '#FFFFFF',
-    primary: '#734F96',
-    text: '#333333',
-    textLight: '#888888',
-    inputBackground: '#F0F0F0',
-    border: '#D1D5DB',
-    white: '#FFFFFF',
-  },
-  spacing: {
-    sm: 8,
-    md: 16,
-    lg: 20,
-    xl: 24,
-  },
-  typography: {
-    fontSizes: {
-      sm: 14,
-      md: 16,
-      lg: 18,
-      xl: 20,
-      xxl: 28,
-    },
-    fontWeights: {
-      regular: '400',
-      medium: '500',
-      bold: '700',
-    },
-  },
-  shadows: {
-    light: {
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.18,
-      shadowRadius: 1.00,
-      elevation: 1,
-    },
-    medium: {
-       shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.23,
-        shadowRadius: 2.62,
-        elevation: 4,
-    }
-  }
-};
+import theme from '../theme';
 
 import ExpenseItem from '../components/ExpenseItem';
 import TimeFilter from '../components/TimeFilter';
-import DropdownFilter from '../components/DropdownFilter'; // Updated component
+import DropdownFilter from '../components/DropdownFilter';
 import { useExpenses } from '../context/ExpenseContext';
 import { useUser } from '../context/UserContext';
 import { EXPENSE_CATEGORIES } from '../utils/constants';
@@ -432,20 +378,20 @@ const ExpensesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: theme.colors.background,
   },
   header: {
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: Platform.OS === 'android' ? theme.spacing.xl : theme.spacing.lg,
+    paddingTop: theme.spacing.xl,
     paddingBottom: theme.spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   title: {
-    fontSize: 34,
+    fontSize: theme.typography.fontSizes.xxxl,
     fontWeight: theme.typography.fontWeights.bold,
-    color: '#000000',
+    color: theme.colors.text,
   },
   settingsIcon: {
     padding: theme.spacing.sm,
@@ -453,21 +399,23 @@ const styles = StyleSheet.create({
   filterContainer: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
-    zIndex: 10, 
+    zIndex: 10,
+    backgroundColor: theme.colors.background,
   },
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   filterItem: {
-    marginRight: theme.spacing.sm,
+    flex: 1,
   },
   filterItemFlex: {
     flex: 1,
   },
   filterItemThird: {
-     flexGrow: 0.6,
+    flex: 0.5,
   },
   searchContainer: {
     paddingHorizontal: theme.spacing.lg,
@@ -475,9 +423,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     backgroundColor: theme.colors.inputBackground,
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    borderRadius: theme.borderRadius.round,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.text,
   },
@@ -492,11 +440,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 50,
+    marginTop: theme.spacing.xxl,
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textLight,
   },
-  // Calendar Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -505,78 +452,68 @@ const styles = StyleSheet.create({
   },
   calendarContainer: {
     width: '90%',
-    backgroundColor: 'white',
-    borderRadius: 10,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
+    ...theme.shadows.medium,
   },
   calendarHeader: {
-    backgroundColor: '#EDE8F2',
-    paddingVertical: 15,
+    backgroundColor: theme.colors.secondary,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
   },
   calendarTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#734F96',
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.semiBold,
+    color: theme.colors.primary,
   },
   selectedRangeContainer: {
-    padding: 15,
+    padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#EDE8F2',
+    borderTopColor: theme.colors.border,
   },
   selectedRangeText: {
-    fontSize: 16,
-    color: '#333333',
-    marginVertical: 2,
+    fontSize: theme.typography.fontSizes.lg,
+    color: theme.colors.text,
+    marginVertical: theme.spacing.xs,
   },
   calendarActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 15,
+    padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#EDE8F2',
+    borderTopColor: theme.colors.border,
   },
   calendarButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
     flex: 1,
-    marginHorizontal: 5,
+    marginHorizontal: theme.spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
   calendarCancelButton: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.inputBackground,
   },
   calendarApplyButton: {
-    backgroundColor: '#EDE8F2',
+    backgroundColor: theme.colors.secondary,
   },
   calendarButtonDisabled: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.inputBackground,
     opacity: 0.7,
   },
   calendarButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333333',
+    fontSize: theme.typography.fontSizes.md,
+    fontWeight: theme.typography.fontWeights.medium,
+    color: theme.colors.text,
   },
   calendarApplyText: {
-    color: '#734F96',
-    fontWeight: '600',
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeights.semiBold,
   },
   calendarButtonTextDisabled: {
-    color: '#999999',
+    color: theme.colors.textLight,
   },
 });
 
