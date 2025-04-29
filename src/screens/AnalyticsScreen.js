@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'; // Added TouchableOpacity
 import { LineChart, BarChart } from 'react-native-chart-kit'; // Removed PieChart as it's not used
 import { Dimensions } from 'react-native';
 import theme from '../theme';
