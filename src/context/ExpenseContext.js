@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { getExpenses, saveExpenses } from '../services/storageService';
-import { generateUniqueId, generateTestExpenses } from '../utils/helpers';
+import { generateUniqueId, generateTestExpenses, filterExpensesByPeriod } from '../utils/helpers';
 import { useUser } from './UserContext';
 
 // Create context
@@ -17,6 +17,8 @@ export const ExpenseProvider = ({ children }) => {
   // dateRangeFilter can now be a string ('Last 30 Days') or an object ({ type: 'custom', startDate, endDate })
   const [dateRangeFilter, setDateRangeFilter] = useState('Last 30 Days'); 
   const [sortCriteria, setSortCriteria] = useState('Date');
+  // Новый стейт для периода
+  const [selectedPeriod, setSelectedPeriod] = useState('Week');
 
   // Load expenses from storage on mount
   useEffect(() => {
@@ -75,7 +77,10 @@ export const ExpenseProvider = ({ children }) => {
   // Apply all active filters and sorting
   const applyFiltersAndSort = () => {
     let result = [...expenses];
-    
+    // Фильтрация по выбранному периоду
+    if (selectedPeriod) {
+      result = filterExpensesByPeriod(result, selectedPeriod);
+    }
     // Apply date range filter
     result = filterByDateRange(result, dateRangeFilter);
     
@@ -306,6 +311,11 @@ export const ExpenseProvider = ({ children }) => {
     refreshExpensesWithDebugCheck();
   };
 
+  // Функция смены периода
+  const changePeriod = (period) => {
+    setSelectedPeriod(period);
+  };
+
   return (
     <ExpenseContext.Provider
       value={{
@@ -322,7 +332,10 @@ export const ExpenseProvider = ({ children }) => {
         changeSortCriteria, // Expose function to change sort criteria
         refreshExpenses,
         filterExpensesByCategory,
-        filterExpensesBySearch
+        filterExpensesBySearch,
+        // Новое:
+        selectedPeriod,
+        changePeriod
       }}
     >
       {children}

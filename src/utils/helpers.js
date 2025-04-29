@@ -126,10 +126,13 @@ export const groupExpensesByCategory = (expenses) => {
 
 // Generate chart data from expenses
 export const generateChartData = (expenses, period) => {
-  if (!expenses || !expenses.length) return {
-    labels: [],
-    datasets: [{ data: [0] }]
-  };
+  if (!expenses || !expenses.length) {
+    // Return default data with zeros instead of empty arrays
+    return {
+      labels: ['1D', '1W', '1M', '3M', '1Y'],
+      datasets: [{ data: [0, 0, 0, 0, 0] }]
+    };
+  }
   
   const now = new Date();
   let labels = [];
@@ -158,7 +161,8 @@ export const generateChartData = (expenses, period) => {
         const expenseDate = new Date(expense.date);
         const dayIndex = labels.indexOf(days[expenseDate.getDay()]);
         if (dayIndex !== -1) {
-          data[dayIndex] += parseFloat(expense.amount);
+          const amount = parseFloat(expense.amount) || 0;
+          data[dayIndex] += amount;
         }
       });
       break;
@@ -171,13 +175,14 @@ export const generateChartData = (expenses, period) => {
       expenses.forEach(expense => {
         const expenseDate = new Date(expense.date);
         const day = expenseDate.getDate();
+        const amount = parseFloat(expense.amount) || 0;
         
-        if (day <= 5) data[0] += parseFloat(expense.amount);
-        else if (day <= 10) data[1] += parseFloat(expense.amount);
-        else if (day <= 15) data[2] += parseFloat(expense.amount);
-        else if (day <= 20) data[3] += parseFloat(expense.amount);
-        else if (day <= 25) data[4] += parseFloat(expense.amount);
-        else data[5] += parseFloat(expense.amount);
+        if (day <= 5) data[0] += amount;
+        else if (day <= 10) data[1] += amount;
+        else if (day <= 15) data[2] += amount;
+        else if (day <= 20) data[3] += amount;
+        else if (day <= 25) data[4] += amount;
+        else data[5] += amount;
       });
       break;
     
@@ -197,7 +202,8 @@ export const generateChartData = (expenses, period) => {
         const expenseMonth = expenseDate.toLocaleString('default', { month: 'short' });
         const monthIndex = labels.indexOf(expenseMonth);
         if (monthIndex !== -1) {
-          data[monthIndex] += parseFloat(expense.amount);
+          const amount = parseFloat(expense.amount) || 0;
+          data[monthIndex] += amount;
         }
       });
       break;
@@ -215,18 +221,29 @@ export const generateChartData = (expenses, period) => {
       expenses.forEach(expense => {
         const expenseDate = new Date(expense.date);
         if (expenseDate.getFullYear() === now.getFullYear()) {
-          data[expenseDate.getMonth()] += parseFloat(expense.amount);
+          const amount = parseFloat(expense.amount) || 0;
+          data[expenseDate.getMonth()] += amount;
         }
       });
       break;
     
     default:
-      break;
+      // Return default data for unknown periods
+      return {
+        labels: ['1D', '1W', '1M', '3M', '1Y'],
+        datasets: [{ data: [0, 0, 0, 0, 0] }]
+      };
   }
+  
+  // Ensure all data points are valid numbers
+  const validData = data.map(value => {
+    const num = Number(value);
+    return isFinite(num) ? num : 0;
+  });
   
   return {
     labels,
-    datasets: [{ data }]
+    datasets: [{ data: validData }]
   };
 };
 

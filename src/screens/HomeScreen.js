@@ -34,6 +34,7 @@ const HomeScreen = () => {
     labels: ['1D', '1W', '1M', '3M', '1Y'],
     datasets: [{ data: [0, 0, 0, 0, 0] }],
   });
+  const [chartWidth, setChartWidth] = useState(0);
 
   // Generate chart data when expenses change
   useEffect(() => {
@@ -107,7 +108,14 @@ const HomeScreen = () => {
         </View>
         
         <View style={styles.chartContainer}>
-          <ExpenseChart data={chartData} />
+          <View
+            style={styles.chartContainer}
+            onLayout={e => setChartWidth(e.nativeEvent.layout.width)}
+          >
+            {chartWidth > 0 && (
+              <ExpenseChart data={chartData} width={chartWidth} />
+            )}
+          </View>
           
           {/* Use timeFilter naming convention from remote */}
           <View style={styles.timeFilterContainer}>
@@ -263,9 +271,8 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     marginVertical: theme.spacing.md,
-    alignItems: 'center', // Center align for proper chart positioning
-    width: '100%', // Ensure container takes full width
-    flex: 0, // Prevent chart from expanding
+    alignItems: 'center',
+    width: '100%',
   },
   // Use timeFilter naming convention from remote
   timeFilterContainer: {

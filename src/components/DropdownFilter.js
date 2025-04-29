@@ -63,7 +63,8 @@ const DropdownFilter = ({
   const dropdownHeight = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const buttonScaleAnim = useRef(new Animated.Value(1)).current;
   const containerRef = useRef(null);
   const initialMeasurementDone = useRef(false);
   
@@ -150,9 +151,6 @@ const DropdownFilter = ({
   // Re-measure before opening dropdown
   useEffect(() => {
     if (isOpen) {
-      // Force measurement when opening
-      measureDropdownPosition();
-      
       // Configure smooth layout transitions
       LayoutAnimation.configureNext({
         duration: 200,
@@ -165,101 +163,83 @@ const DropdownFilter = ({
 
   // Handle Animations with improved timing
   useEffect(() => {
-    if (!hasMeasured || calculatedContentHeight <= 0) return;
+    if (calculatedContentHeight <= 0) return;
     
     if (isOpen) {
       setIsAnimating(true);
-      
-      // Pre-set initial values
-      dropdownHeight.setValue(0);
+      // Reset initial values
       opacityAnim.setValue(0);
-      scaleAnim.setValue(0.95);
-      
-      // Use a single animation group with proper timing
+      scaleAnim.setValue(1);
       Animated.parallel([
-        // Height animation
-        Animated.timing(dropdownHeight, {
-          toValue: calculatedContentHeight,
-          duration: 250,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-          useNativeDriver: false,
-          delay: 0, // Start immediately
-        }),
-        // Opacity and scale animations
         Animated.timing(opacityAnim, {
           toValue: 1,
           duration: 200,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          easing: Easing.bezier(0.2, 0, 0.2, 1),
           useNativeDriver: true,
-          delay: 50, // Slight delay for smoother appearance
         }),
         Animated.timing(scaleAnim, {
           toValue: 1,
           duration: 200,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          easing: Easing.bezier(0.2, 0, 0.2, 1),
           useNativeDriver: true,
-          delay: 50, // Slight delay for smoother appearance
         }),
-        // Rotation animation
         Animated.timing(rotateAnim, {
           toValue: 1,
           duration: 200,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          easing: Easing.bezier(0.2, 0, 0.2, 1),
           useNativeDriver: true,
         })
       ]).start(({ finished }) => {
         if (finished) {
           setIsAnimating(false);
+        } else {
+          setTimeout(() => {
+            setIsAnimating(false);
+          }, 500);
         }
       });
     } else {
       setIsAnimating(true);
-      
-      // Closing animation
       Animated.parallel([
         Animated.timing(opacityAnim, {
           toValue: 0,
           duration: 150,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          easing: Easing.bezier(0.2, 0, 0.2, 1),
           useNativeDriver: true,
         }),
         Animated.timing(scaleAnim, {
-          toValue: 0.95,
+          toValue: 1,
           duration: 150,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          easing: Easing.bezier(0.2, 0, 0.2, 1),
           useNativeDriver: true,
-        }),
-        Animated.timing(dropdownHeight, {
-          toValue: 0,
-          duration: 200,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-          useNativeDriver: false,
         }),
         Animated.timing(rotateAnim, {
           toValue: 0,
           duration: 150,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          easing: Easing.bezier(0.2, 0, 0.2, 1),
           useNativeDriver: true,
         })
       ]).start(({ finished }) => {
         if (finished) {
           setIsAnimating(false);
+        } else {
+          setTimeout(() => {
+            setIsAnimating(false);
+          }, 500);
         }
       });
     }
-  }, [isOpen, hasMeasured, calculatedContentHeight]);
+  }, [isOpen, calculatedContentHeight]);
 
   const toggleDropdown = () => {
     // Don't allow toggle during animation
     if (isAnimating) return;
     
-    // Always re-measure before opening
-    if (!isOpen) {
-      measureDropdownPosition();
-    }
-    
-    // Only allow toggle if measured
+    // Only allow toggle if measured or fallback
     if (hasMeasured) {
+      setActiveDropdownId(isOpen ? null : id);
+    } else {
+      // Fallback: allow toggle even if not measured
       setActiveDropdownId(isOpen ? null : id);
     }
   };
@@ -279,6 +259,24 @@ const DropdownFilter = ({
     inputRange: [0, 1],
     outputRange: ['0deg', '180deg']
   });
+
+  const onPressIn = () => {
+    Animated.spring(buttonScaleAnim, {
+      toValue: 0.9,
+      friction: 5,
+      tension: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+  
+  const onPressOut = () => {
+    Animated.spring(buttonScaleAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 400,
+      useNativeDriver: true,
+    }).start();
+  };
 
   // Pre-render the dropdown content to avoid jitter
   const renderDropdownContent = () => (
@@ -311,24 +309,28 @@ const DropdownFilter = ({
 
   return (
     <View style={[styles.wrapper, style]}>
-      <TouchableOpacity 
-        ref={containerRef}
-        style={styles.container} 
-        onPress={toggleDropdown}
-        activeOpacity={0.8}
-        disabled={!hasMeasured || isAnimating}
-      >
-        <Text style={styles.valueText} numberOfLines={1} ellipsizeMode="tail">
-          {label}: {value}
-        </Text>
-        {hasMeasured ? (
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            <Ionicons name="chevron-down" size={20} color={colors.primary} />
-          </Animated.View>
-        ) : (
-          <View style={{ width: 20 }} />
-        )}
-      </TouchableOpacity>
+      <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+        <TouchableOpacity 
+          ref={containerRef}
+          style={styles.container} 
+          onPress={toggleDropdown}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          activeOpacity={0.8}
+          disabled={isAnimating}
+        >
+          <Text style={styles.valueText} numberOfLines={1} ellipsizeMode="tail">
+            {label}: {value}
+          </Text>
+          {hasMeasured ? (
+            <Animated.View style={{ transform: [{ rotate }] }}>
+              <Ionicons name="chevron-down" size={20} color={colors.primary} />
+            </Animated.View>
+          ) : (
+            <View style={{ width: 20 }} />
+          )}
+        </TouchableOpacity>
+      </Animated.View>
 
       {hasMeasured && (
         <Modal
@@ -336,15 +338,10 @@ const DropdownFilter = ({
           visible={isOpen}
           onRequestClose={closeModal}
           animationType="none"
-          onShow={() => {
-            // Force re-measurement when modal shows
-            measureDropdownPosition();
-          }}
           hardwareAccelerated={true}
         >
           <TouchableWithoutFeedback onPress={closeModal}> 
             <View style={StyleSheet.absoluteFill}> 
-              {/* Outer Animated Container for HEIGHT animation (JS thread) */}
               <Animated.View 
                 style={[
                   styles.dropdown,
@@ -352,23 +349,13 @@ const DropdownFilter = ({
                     top: dropdownPosition.top,
                     left: dropdownPosition.left,
                     width: dropdownPosition.width,
-                    height: dropdownHeight,
-                    opacity: 1, // Keep this at 1, opacity is handled by inner view
+                    opacity: opacityAnim,
+                    transform: [{ scale: scaleAnim }],
                   }
                 ]}
                 collapsable={false}
               >
-                {/* Inner Animated Container for OPACITY and SCALE animations (Native thread) */}
-                <Animated.View 
-                  style={{ 
-                    flex: 1, 
-                    opacity: opacityAnim,
-                    transform: [{ scale: scaleAnim }]
-                  }}
-                  collapsable={false}
-                >
-                  {renderDropdownContent()}
-                </Animated.View>
+                {renderDropdownContent()}
               </Animated.View>
             </View>
           </TouchableWithoutFeedback>
@@ -402,13 +389,14 @@ const styles = StyleSheet.create({
   dropdown: {
     position: 'absolute',
     backgroundColor: colors.dropdownBackground, 
-    borderRadius: 10, 
+    borderRadius: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-    borderWidth: 0,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.20,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   list: {

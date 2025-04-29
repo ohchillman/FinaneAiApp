@@ -5,20 +5,16 @@ import { Dimensions } from 'react-native';
 import theme from '../theme';
 import { useUser } from '../context/UserContext';
 
-// Calculate screen width dynamically for better responsiveness
-const getScreenWidth = () => {
-  return Dimensions.get('window').width; // Use full screen width
-};
-
 const ExpenseChart = ({ 
   data = {
     labels: ['1D', '1W', '1M', '3M', '1Y'],
     datasets: [
       {
-        data: [20, 45, 28, 80, 99, 43, 50],
+        data: [0, 0, 0, 0, 0],
       },
     ],
   },
+  width = 300, // fallback
   height = 220, // Increased height for better visualization
   style = {},
 }) => {
@@ -47,21 +43,27 @@ const ExpenseChart = ({
     fillShadowGradientOpacity: 0.1,
   };
 
-  // Get current screen width for responsive rendering
-  const screenWidth = getScreenWidth();
-  
   // Ensure data always starts and ends at edges by adding padding points if needed
   const processedData = React.useMemo(() => {
     if (!data || !data.datasets || !data.datasets[0] || !data.datasets[0].data) {
-      return data;
+      return {
+        labels: ['1D', '1W', '1M', '3M', '1Y'],
+        datasets: [{ data: [0, 0, 0, 0, 0] }]
+      };
     }
     
-    const originalData = [...data.datasets[0].data];
+    const originalData = data.datasets[0].data;
+    
+    // Ensure all data points are valid numbers
+    const validData = originalData.map(value => {
+      const num = Number(value);
+      return isFinite(num) ? num : 0;
+    });
     
     // Only modify if we have actual data
-    if (originalData.length > 0) {
+    if (validData.length > 0) {
       // Create a new array with padding points at start and end
-      const paddedData = [originalData[0], ...originalData, originalData[originalData.length - 1]];
+      const paddedData = [validData[0], ...validData, validData[validData.length - 1]];
       
       return {
         ...data,
@@ -74,14 +76,17 @@ const ExpenseChart = ({
       };
     }
     
-    return data;
+    return {
+      labels: ['1D', '1W', '1M', '3M', '1Y'],
+      datasets: [{ data: [0, 0, 0, 0, 0] }]
+    };
   }, [data]);
   
   return (
     <View style={[styles.container, style]}>
       <LineChart
         data={processedData}
-        width={screenWidth}
+        width={width}
         height={height}
         chartConfig={chartConfig}
         bezier

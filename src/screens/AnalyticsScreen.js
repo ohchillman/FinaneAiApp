@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
-import { LineChart, PieChart } from 'react-native-chart-kit';
+import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import theme from '../theme';
 import Card from '../components/Card';
@@ -8,6 +8,7 @@ import TimeFilter from '../components/TimeFilter';
 import { useExpenses } from '../context/ExpenseContext';
 import { generateChartData, generatePieChartData, formatCurrency, groupExpensesByCategory } from '../utils/helpers';
 import { useUser } from '../context/UserContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const screenWidth = Dimensions.get('window').width - 32; // Accounting for margins
 
@@ -23,153 +24,151 @@ const AnalyticsScreen = () => {
     labels: [],
     datasets: [{ data: [0] }]
   });
-  const [pieChartData, setPieChartData] = useState([]);
-  const [topExpenses, setTopExpenses] = useState([]);
-  
-  // Generate chart data when expenses change
+  const [barChartData, setBarChartData] = useState({
+    labels: [],
+    datasets: [{ data: [0, 0, 0, 0] }]
+  });
+  const [categoryNames, setCategoryNames] = useState([]);
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [mostSpentCategory, setMostSpentCategory] = useState(null);
+  const [avgDaily, setAvgDaily] = useState(0);
+  const [mainCategory, setMainCategory] = useState({ name: '', amount: 0 });
+
   useEffect(() => {
     if (filteredExpenses.length > 0) {
       // Line chart data
       const data = generateChartData(filteredExpenses, selectedPeriod);
       setLineChartData(data);
-      
-      // Pie chart data
-      const pieData = generatePieChartData(filteredExpenses);
-      setPieChartData(pieData);
-      
-      // Top expenses by category
-      const groupedExpenses = groupExpensesByCategory(filteredExpenses);
-      const sortedCategories = Object.keys(groupedExpenses).sort(
-        (a, b) => groupedExpenses[b] - groupedExpenses[a]
-      );
-      
-      const totalAmount = sortedCategories.reduce(
-        (total, category) => total + groupedExpenses[category], 
-        0
-      );
-      
-      const topThree = sortedCategories.slice(0, 3).map(category => ({
-        category,
-        amount: formatCurrency(groupedExpenses[category], user.currency),
-        percentage: `${Math.round((groupedExpenses[category] / totalAmount) * 100)}%`
-      }));
-      
-      setTopExpenses(topThree);
-    } else {
-      // Reset charts if no expenses
-      setLineChartData({
-        labels: [],
-        datasets: [{ data: [0] }]
+      // Bar chart by category
+      const grouped = groupExpensesByCategory(filteredExpenses);
+      const sorted = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+      const top4 = sorted.slice(0, 4);
+      setCategoryNames(top4.map(([name]) => name));
+      setBarChartData({
+        labels: top4.map(([name]) => name.length > 10 ? name.slice(0, 10) + '…' : name),
+        datasets: [{ data: top4.map(([, value]) => value) }]
       });
-      setPieChartData([]);
-      setTopExpenses([]);
+      // Main category
+      setMainCategory(top4[0] ? { name: top4[0][0], amount: top4[0][1] } : { name: '', amount: 0 });
+      // Total spent
+      const total = Object.values(grouped).reduce((a, b) => a + b, 0);
+      setTotalSpent(total);
+      // Most spent category
+      setMostSpentCategory(top4[0] ? { name: top4[0][0], amount: top4[0][1] } : null);
+      // Avg daily
+      let days = 1;
+      if (selectedPeriod === 'Week') days = 7;
+      else if (selectedPeriod === 'Month') days = 30;
+      else if (selectedPeriod === 'Year') days = 365;
+      setAvgDaily(total / days);
+    } else {
+      setLineChartData({ labels: [], datasets: [{ data: [0] }] });
+      setBarChartData({ labels: [], datasets: [{ data: [0, 0, 0, 0] }] });
+      setCategoryNames([]);
+      setMainCategory({ name: '', amount: 0 });
+      setTotalSpent(0);
+      setMostSpentCategory(null);
+      setAvgDaily(0);
     }
   }, [filteredExpenses, selectedPeriod, user.currency]);
 
   const chartConfig = {
-    backgroundGradientFrom: theme.colors.background,
-    backgroundGradientTo: theme.colors.background,
+    backgroundGradientFrom: '#F8F5FF',
+    backgroundGradientTo: '#F8F5FF',
     decimalPlaces: 0,
-    color: () => theme.colors.chartLine,
-    labelColor: () => theme.colors.textLight,
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '4',
-      strokeWidth: '2',
-      stroke: theme.colors.primary,
-    },
-    propsForBackgroundLines: {
-      stroke: theme.colors.chartGrid,
-      strokeDasharray: '',
-    },
+    color: () => '#7B4EFF',
+    labelColor: () => '#B7A8D6',
+    style: { borderRadius: 16 },
+    propsForBackgroundLines: { stroke: '#E5DDF6' },
+    propsForLabels: { fontSize: 12 },
+    barPercentage: 0.7,
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <View style={styles.headerRow}>
         <Text style={styles.title}>Analytics</Text>
+        <Ionicons name="settings-outline" size={24} color="#7B4EFF" />
       </View>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <TimeFilter
-          options={['Week', 'Month', 'Year']}
-          selectedOption={selectedPeriod}
-          onSelect={changePeriod}
-          style={styles.timeFilter}
+        {/* Expenses Over Time */}
+        <Text style={styles.sectionLabel}>Expenses Over Time</Text>
+        <Text style={styles.bigNumber}>{formatCurrency(totalSpent, user.currency)}</Text>
+        <Text style={styles.periodChange}>Last 7 Days <Text style={styles.positive}>+12%</Text></Text>
+        <LineChart
+          data={lineChartData}
+          width={screenWidth}
+          height={110}
+          chartConfig={chartConfig}
+          bezier
+          style={styles.lineChart}
+          withDots={false}
+          withInnerLines={false}
+          withOuterLines={false}
+          withShadow={false}
         />
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
-        ) : filteredExpenses.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No expenses found</Text>
-            <Text style={styles.emptySubtext}>
-              Add some expenses to see analytics
+        <View style={styles.timeTabs}>
+          {['1D', '1W', '1M', '3M', '1Y'].map((opt, idx) => (
+            <Text
+              key={opt}
+              style={[styles.timeTab, (selectedPeriod === 'Day' && idx === 0) || (selectedPeriod === 'Week' && idx === 1) || (selectedPeriod === 'Month' && idx === 2) ? styles.timeTabActive : null]}
+              onPress={() => changePeriod(idx === 0 ? 'Day' : idx === 1 ? 'Week' : idx === 2 ? 'Month' : idx === 3 ? '3M' : 'Year')}
+            >
+              {opt}
             </Text>
+          ))}
+        </View>
+        {/* Expenses by Category */}
+        <Text style={styles.sectionLabel}>Expenses by Category</Text>
+        <Text style={styles.categoryMain}><Text style={styles.categoryMainLabel}>{mainCategory.name ? mainCategory.name + ': ' : ''}</Text>{mainCategory.amount ? formatCurrency(mainCategory.amount, user.currency) : '$0'}</Text>
+        <Text style={styles.categorySubLabel}>Last 7 Days N/A</Text>
+        <BarChart
+          data={barChartData}
+          width={screenWidth}
+          height={120}
+          chartConfig={chartConfig}
+          fromZero
+          showValuesOnTopOfBars={false}
+          withInnerLines={false}
+          withHorizontalLabels={false}
+          style={styles.barChart}
+        />
+        <View style={styles.barLabelsRow}>
+          {categoryNames.map((name, idx) => (
+            <Text key={name} style={styles.barLabel}>{name}</Text>
+          ))}
+        </View>
+        {/* Cards with metrics */}
+        <View style={styles.metricsRow}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Total Spent</Text>
+            <Text style={styles.metricValue}>{formatCurrency(totalSpent, user.currency)}</Text>
+            <Text style={styles.metricSubValue}>N/A</Text>
           </View>
-        ) : (
-          <>
-            <Card title="Expense Trend" style={styles.card}>
-              <LineChart
-                data={lineChartData}
-                width={screenWidth - 32} // Accounting for card padding
-                height={220}
-                chartConfig={chartConfig}
-                bezier
-                style={styles.chart}
-              />
-            </Card>
-
-            <Card title="Expense by Category" style={styles.card}>
-              {pieChartData.length > 0 ? (
-                <PieChart
-                  data={pieChartData}
-                  width={screenWidth - 32} // Accounting for card padding
-                  height={220}
-                  chartConfig={chartConfig}
-                  accessor="population"
-                  backgroundColor="transparent"
-                  paddingLeft="15"
-                  absolute
-                />
-              ) : (
-                <View style={styles.noDataContainer}>
-                  <Text style={styles.noDataText}>No category data available</Text>
-                </View>
-              )}
-            </Card>
-
-            <Card title="Top Expenses" style={styles.card}>
-              {topExpenses.length > 0 ? (
-                topExpenses.map((item, index) => (
-                  <View key={index} style={styles.topExpenseItem}>
-                    <View style={styles.topExpenseInfo}>
-                      <Text style={styles.topExpenseCategory}>{item.category}</Text>
-                      <Text style={styles.topExpenseAmount}>{item.amount}</Text>
-                    </View>
-                    <View style={styles.percentageBar}>
-                      <View 
-                        style={[
-                          styles.percentageFill, 
-                          { width: item.percentage }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={styles.percentageText}>{item.percentage}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.noDataContainer}>
-                  <Text style={styles.noDataText}>No expense data available</Text>
-                </View>
-              )}
-            </Card>
-          </>
-        )}
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Most Spent Category</Text>
+            <Text style={styles.metricValue}>{mostSpentCategory ? mostSpentCategory.name : '-'}</Text>
+            <Text style={styles.metricSubValue}>{mostSpentCategory ? formatCurrency(mostSpentCategory.amount, user.currency) : ''}</Text>
+          </View>
+        </View>
+        <View style={styles.metricsRow}>
+          <View style={styles.metricCardFull}>
+            <Text style={styles.metricLabel}>Avg Daily Spending</Text>
+            <Text style={styles.metricValue}>{formatCurrency(avgDaily, user.currency)}</Text>
+            <Text style={styles.metricSubValue}>N/A</Text>
+          </View>
+        </View>
+        <View style={styles.bottomTabs}>
+          {['Day', 'Week', 'Month'].map(opt => (
+            <Text
+              key={opt}
+              style={[styles.bottomTab, selectedPeriod === opt && styles.bottomTabActive]}
+              onPress={() => changePeriod(opt)}
+            >
+              {opt}
+            </Text>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -178,100 +177,166 @@ const AnalyticsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F8F5FF',
   },
-  header: {
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 0,
   },
   title: {
-    fontSize: theme.typography.fontSizes.xxl,
-    fontWeight: theme.typography.fontWeights.bold,
-    color: theme.colors.text,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#181028',
+    flex: 1,
+    textAlign: 'left',
   },
   content: {
     flex: 1,
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: 20,
   },
-  timeFilter: {
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+  sectionLabel: {
+    fontSize: 15,
+    color: '#6B5A8E',
+    marginTop: 18,
+    marginBottom: 2,
+    fontWeight: '500',
   },
-  card: {
-    marginBottom: theme.spacing.lg,
+  bigNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#181028',
+    marginBottom: 2,
+    marginTop: 2,
   },
-  chart: {
-    marginVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+  periodChange: {
+    fontSize: 14,
+    color: '#B7A8D6',
+    marginBottom: 8,
   },
-  topExpenseItem: {
-    marginBottom: theme.spacing.md,
+  positive: {
+    color: '#3CBF61',
+    fontWeight: 'bold',
   },
-  topExpenseInfo: {
+  lineChart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  timeTabs: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.xs,
+    marginTop: 8,
+    marginBottom: 8,
   },
-  topExpenseCategory: {
-    fontSize: theme.typography.fontSizes.md,
-    fontWeight: theme.typography.fontWeights.medium,
-    color: theme.colors.text,
+  timeTab: {
+    color: '#7B4EFF',
+    fontWeight: '500',
+    fontSize: 15,
+    opacity: 0.5,
+    paddingHorizontal: 6,
   },
-  topExpenseAmount: {
-    fontSize: theme.typography.fontSizes.md,
-    fontWeight: theme.typography.fontWeights.semiBold,
-    color: theme.colors.text,
+  timeTabActive: {
+    opacity: 1,
+    textDecorationLine: 'underline',
   },
-  percentageBar: {
-    height: 8,
-    backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.round,
-    marginBottom: theme.spacing.xs,
+  categoryMain: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#181028',
+    marginTop: 8,
+    marginBottom: 2,
   },
-  percentageFill: {
-    height: '100%',
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.round,
+  categoryMainLabel: {
+    fontWeight: '500',
+    color: '#181028',
   },
-  percentageText: {
-    fontSize: theme.typography.fontSizes.xs,
-    color: theme.colors.textLight,
-    textAlign: 'right',
+  categorySubLabel: {
+    fontSize: 13,
+    color: '#B7A8D6',
+    marginBottom: 8,
   },
-  loadingContainer: {
+  barChart: {
+    marginVertical: 0,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+  },
+  barLabelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  barLabel: {
+    fontSize: 13,
+    color: '#B7A8D6',
+    textAlign: 'center',
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 300,
   },
-  emptyContainer: {
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  metricCard: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 300,
+    backgroundColor: '#F8F5FF',
+    borderRadius: 18,
+    padding: 16,
+    marginRight: 8,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#E5DDF6',
   },
-  emptyText: {
-    fontSize: theme.typography.fontSizes.lg,
-    fontWeight: theme.typography.fontWeights.medium,
-    color: theme.colors.text,
+  metricCardFull: {
+    flex: 1,
+    backgroundColor: '#F8F5FF',
+    borderRadius: 18,
+    padding: 16,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#E5DDF6',
   },
-  emptySubtext: {
-    fontSize: theme.typography.fontSizes.md,
-    color: theme.colors.textLight,
-    marginTop: theme.spacing.xs,
+  metricLabel: {
+    fontSize: 15,
+    color: '#6B5A8E',
+    marginBottom: 4,
+    fontWeight: '500',
   },
-  noDataContainer: {
-    height: 150,
-    justifyContent: 'center',
-    alignItems: 'center',
+  metricValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#181028',
   },
-  noDataText: {
-    fontSize: theme.typography.fontSizes.md,
-    color: theme.colors.textLight,
+  metricSubValue: {
+    fontSize: 15,
+    color: '#B7A8D6',
+    marginTop: 2,
+  },
+  bottomTabs: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#ECE6F7',
+    borderRadius: 16,
+    marginTop: 18,
+    marginBottom: 18,
+    padding: 4,
+  },
+  bottomTab: {
+    flex: 1,
+    textAlign: 'center',
+    paddingVertical: 8,
+    fontSize: 16,
+    color: '#7B4EFF',
+    fontWeight: '500',
+    opacity: 0.7,
+  },
+  bottomTabActive: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    opacity: 1,
   },
 });
 
