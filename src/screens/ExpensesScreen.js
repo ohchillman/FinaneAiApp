@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, CalendarList } from 'react-native-calendars';
+import { Ionicons } from '@expo/vector-icons'; // Added missing import
 import theme from '../theme';
 
 import ExpenseItem from '../components/ExpenseItem';
