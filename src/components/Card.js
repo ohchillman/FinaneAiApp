@@ -26,9 +26,9 @@ const Card = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    ...theme.shadows.light,
+    backgroundColor: theme.colors.card, // Use card color (white) instead of background
+    borderRadius: theme.borderRadius.lg, // Use larger radius based on screenshots
+    ...theme.shadows.sm, // Use sm shadow based on screenshots
     marginBottom: theme.spacing.md,
     overflow: 'hidden',
   },

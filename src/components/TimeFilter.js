@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   selectedOption: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.card, // Changed to card color (white)
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

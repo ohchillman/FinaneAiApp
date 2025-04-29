@@ -29,26 +29,25 @@ const ProfileScreen = () => {
   };
 
   const menuItems = [
-    { id: '1', title: 'Account Settings', icon: 'person-outline' },
-    { id: '2', title: 'Payment Methods', icon: 'card-outline' },
+    { id: '1', title: 'Manage Account', icon: 'person-outline' },
+    { id: '2', title: 'Change Currency', icon: 'swap-horizontal-outline' }, // Updated icon
     { id: '3', title: 'Notifications', icon: 'notifications-outline' },
-    { id: '4', title: 'Privacy & Security', icon: 'shield-outline' },
+    { id: '4', title: 'Privacy & Security', icon: 'lock-closed-outline' }, // Updated icon
     { id: '5', title: 'Help & Support', icon: 'help-circle-outline' },
-    { id: '6', title: 'About', icon: 'information-circle-outline' },
+    { id: '6', title: 'Log Out', icon: 'log-out-outline' }, // Updated icon and action
   ];
 
   const handleMenuItemPress = (item) => {
-    console.log(`Navigate to ${item.title}`);
-    // Navigation to specific settings screens could be added here
+    if (item.title === 'Log Out') {
+      handleSignOut();
+    } else {
+      console.log(`Navigate to ${item.title}`);
+      // Navigation to specific settings screens could be added here
+    }
   };
 
-  const handleUpgradeToPro = () => {
-    Alert.alert(
-      'Upgrade to Pro',
-      'This feature is not available in the demo version.',
-      [{ text: 'OK' }]
-    );
-  };
+  // Remove handleUpgradeToPro function as it's not needed
+  // const handleUpgradeToPro = () => { ... };
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -77,9 +76,10 @@ const ProfileScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
-        <TouchableOpacity style={styles.settingsButton}>
+        {/* Settings button removed based on screenshot */}
+        {/* <TouchableOpacity style={styles.settingsButton}>
           <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -89,15 +89,22 @@ const ProfileScreen = () => {
               <Image source={{ uri: user.avatar }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>{user.name.charAt(0)}</Text>
+                <Text style={styles.avatarText}>{user.name ? user.name.charAt(0) : 'U'}</Text>
               </View>
             )}
           </View>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email || 'No email set'}</Text>
+          <Text style={styles.userName}>{user.name || 'User Name'}</Text>
+          {/* User email removed based on screenshot */}
+          {/* <Text style={styles.userEmail}>{user.email || 'No email set'}</Text> */}
+          <Button
+            title="Edit Profile"
+            onPress={() => console.log('Edit Profile pressed')}
+            style={styles.editProfileButton}
+          />
         </View>
 
-        {!user.isPro && (
+        {/* Pro card removed based on screenshot */}
+        {/* {!user.isPro && (
           <Card style={styles.proCard}>
             <View style={styles.proCardContent}>
               <View>
@@ -113,11 +120,11 @@ const ProfileScreen = () => {
               />
             </View>
           </Card>
-        )}
+        )} */}
 
         <View style={styles.menuContainer}>
-          {/* Debug Mode Toggle */}
-          <View style={styles.menuItem}>
+          {/* Debug Mode Toggle removed based on screenshot */}
+          {/* <View style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
               <Ionicons name="bug-outline" size={24} color={theme.colors.primary} />
               <Text style={styles.menuItemText}>Debug Mode</Text>
@@ -129,7 +136,7 @@ const ProfileScreen = () => {
               onValueChange={handleToggleDebugMode}
               value={isDebugMode}
             />
-          </View>
+          </View> */}
           
           {menuItems.map((item) => (
             <TouchableOpacity
@@ -165,11 +172,13 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between', // Remove space-between
+    justifyContent: 'center', // Center the title
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.xl,
     paddingBottom: theme.spacing.sm,
+    position: 'relative', // Needed for absolute positioning if settings button were kept
   },
   title: {
     fontSize: theme.typography.fontSizes.xxxl,
@@ -208,6 +217,11 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSizes.xxxl,
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.card,
+  },
+  editProfileButton: {
+    marginTop: theme.spacing.md, // Add margin top
+    width: '80%', // Make button slightly less than full width
+    alignSelf: 'center', // Center the button
   },
   userName: {
     fontSize: theme.typography.fontSizes.xxl,

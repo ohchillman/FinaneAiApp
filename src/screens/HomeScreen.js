@@ -285,14 +285,17 @@ const styles = StyleSheet.create({
   timeFilterOption: {
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm,
+    // Remove background/border if any
   },
   timeFilterText: {
     fontSize: theme.typography.fontSizes.sm,
     color: theme.colors.textLight,
+    fontWeight: theme.typography.fontWeights.medium, // Match screenshot weight
   },
   activeTimeFilterText: {
     color: theme.colors.primary,
-    fontWeight: theme.typography.fontWeights.semiBold,
+    fontWeight: theme.typography.fontWeights.semiBold, // Match screenshot weight
+    // Add underline or other indicator if needed, screenshot just shows color change
   },
   timeFilterSection: {
     marginVertical: theme.spacing.md,

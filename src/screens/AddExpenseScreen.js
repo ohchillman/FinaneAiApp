@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRoute, useNavigation } from '@react-navigation/native'; // Import useRoute and useNavigation
 import theme from '../theme';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -11,13 +12,38 @@ import { useVoice } from '../context/VoiceContext';
 import { EXPENSE_CATEGORIES } from '../utils/constants';
 
 const AddExpenseScreen = () => {
-  const [expenseText, setExpenseText] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const { createExpense } = useExpenses();
+  const route = useRoute(); // Get route object
+  const navigation = useNavigation(); // Get navigation object
+  const expenseToEdit = route.params?.expense; // Check if an expense was passed for editing
+
+  const [isEditing, setIsEditing] = useState(!!expenseToEdit); // Flag for edit mode
+  const [expenseId, setExpenseId] = useState(expenseToEdit?.id || null);
+  const [expenseText, setExpenseText] = useState(''); // Keep this for AI/Voice input
+  const [amount, setAmount] = useState(expenseToEdit?.amount?.toString() || '');
+  const [category, setCategory] = useState(expenseToEdit?.category || '');
+  const [description, setDescription] = useState(expenseToEdit?.description || '');
+  // Need updateExpense and deleteExpense from context
+  const { addExpense, updateExpense, deleteExpense } = useExpenses();
   const { recognizeExpense, isRecognizing, apiKey } = useAI();
   const { isListening, startListening, stopListening, getLatestResult, isAvailable } = useVoice();
+
+  // Populate fields if editing or reset if adding
+  useEffect(() => {
+    if (expenseToEdit) {
+      setAmount(expenseToEdit.amount?.toString() || '');
+      setCategory(expenseToEdit.category || '');
+      setDescription(expenseToEdit.description || '');
+      setExpenseId(expenseToEdit.id);
+      setIsEditing(true);
+    } else {
+      // Reset fields if navigating here without an expense (for adding new)
+      setAmount('');
+      setCategory('');
+      setDescription('');
+      setExpenseId(null);
+      setIsEditing(false);
+    }
+  }, [expenseToEdit]); // Re-run effect if expenseToEdit changes
   
   // Listen for voice recognition results
   useEffect(() => {
@@ -68,29 +94,64 @@ const AddExpenseScreen = () => {
 
   const handleSave = async () => {
     if (!amount || !category) {
-      Alert.alert('Error', 'Please enter amount and select category');
+      Alert.alert("Error", "Please enter amount and select category");
       return;
     }
-    
+
     const expenseData = {
       title: description || category,
-      amount,
+      amount: parseFloat(amount), // Ensure amount is a number
       category,
       description,
-      date: new Date().toISOString(),
+      date: isEditing ? expenseToEdit.date : new Date().toISOString(), // Keep original date if editing
     };
-    
-    const result = await createExpense(expenseData);
-    if (result) {
-      // Reset form
-      setExpenseText('');
-      setAmount('');
-      setCategory('');
-      setDescription('');
-      Alert.alert('Success', 'Expense saved successfully');
+
+    let result;
+    if (isEditing) {
+      result = await updateExpense(expenseId, expenseData);
     } else {
-      Alert.alert('Error', 'Failed to save expense');
+      result = await addExpense(expenseData);
     }
+
+    if (result) {
+      // Reset form and navigate back
+      setExpenseText("");
+      setAmount("");
+      setCategory("");
+      setDescription("");
+      Alert.alert("Success", `Expense ${isEditing ? "updated" : "saved"} successfully`);
+      navigation.goBack(); // Navigate back after saving/updating
+    } else {
+      Alert.alert("Error", `Failed to ${isEditing ? "update" : "save"} expense`);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!isEditing || !expenseId) return;
+
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this expense?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const result = await deleteExpense(expenseId);
+            if (result) {
+              Alert.alert("Success", "Expense deleted successfully");
+              navigation.goBack(); // Navigate back after deleting
+            } else {
+              Alert.alert("Error", "Failed to delete expense");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -178,11 +239,20 @@ const AddExpenseScreen = () => {
           />
           
           <Button
-            title="Save Expense"
+            title={isEditing ? "Update Expense" : "Save Expense"} // Change button title based on mode
             onPress={handleSave}
             style={styles.saveButton}
             disabled={!amount || !category}
           />
+          {/* Add Delete Button if editing */}
+          {isEditing && (
+            <Button
+              title="Delete Expense"
+              onPress={handleDelete}
+              style={styles.deleteButton}
+              variant="outline" // Use outline style for delete
+            />
+          )}
         </Card>
       </ScrollView>
     </SafeAreaView>
@@ -249,20 +319,26 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   categoryItem: {
-    width: '25%',
+    flexDirection: 'row', // Arrange icon and text horizontally
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm, // Adjust padding
+    paddingHorizontal: theme.spacing.md, // Adjust padding
+    backgroundColor: theme.colors.secondary, // Light grey background for unselected
+    borderRadius: theme.borderRadius.round, // Pill shape
+    marginRight: theme.spacing.sm, // Add spacing between items
+    marginBottom: theme.spacing.sm, // Add spacing between rows
+    borderWidth: 1, // Add border
+    borderColor: theme.colors.secondary, // Border color matches background for unselected
   },
   selectedCategory: {
-    backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background, // Use background color for selected
+    borderColor: theme.colors.primary, // Primary color border for selected
   },
   categoryText: {
-    fontSize: theme.typography.fontSizes.xs,
+    fontSize: theme.typography.fontSizes.sm, // Slightly larger font size
     color: theme.colors.textLight,
-    marginTop: theme.spacing.xs,
+    marginLeft: theme.spacing.xs, // Add space between icon and text
     textAlign: 'center',
   },
   selectedCategoryText: {
@@ -271,6 +347,10 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: theme.spacing.md,
+  },
+  deleteButton: {
+    marginTop: theme.spacing.sm, // Add margin for delete button
+    borderColor: theme.colors.error, // Use error color for border
   },
 });
 

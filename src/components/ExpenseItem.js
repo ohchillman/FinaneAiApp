@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: theme.typography.fontSizes.lg,
     fontWeight: theme.typography.fontWeights.semiBold,
-    color: theme.colors.text,
+    color: theme.colors.success, // Changed to success color (green)
   },
 });
 

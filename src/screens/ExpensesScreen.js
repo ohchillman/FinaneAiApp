@@ -213,11 +213,15 @@ const ExpensesScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Expenses</Text>
+          {/* Add Settings Icon based on screenshot */}
+          <TouchableOpacity style={styles.settingsIcon}>
+            <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
         </View>
 
         {/* Dropdown Filters */}
         <View style={styles.filterContainer}>
-          {/* Row 1: Category & Period */}
+          {/* Single Row for all filters */}
           <View style={styles.filterRow}>
             <DropdownFilter
               id="category-filter"
@@ -225,7 +229,7 @@ const ExpensesScreen = ({ navigation }) => {
               value={selectedCategory}
               options={categoryOptions}
               onSelect={handleCategoryChange}
-              style={[styles.filterItem, styles.filterItemFlex]}
+              style={styles.filterItem} // Use default flex: 1
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
@@ -235,20 +239,17 @@ const ExpensesScreen = ({ navigation }) => {
               value={selectedPeriodDisplay} // Use display value
               options={periodOptions}
               onSelect={handleDateRangeChange}
-              style={[styles.filterItem, styles.filterItemFlex, { marginRight: 0 }]}
+              style={styles.filterItem} // Use default flex: 1
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />
-          </View>
-          {/* Row 2: Sort By */}
-          <View style={styles.filterRow}>
              <DropdownFilter
               id="sort-filter"
               label="Sort By"
               value={selectedSort}
               options={sortOptions}
               onSelect={handleSortChange}
-              style={[styles.filterItem, styles.filterItemThird, { marginRight: 0 }]}
+              style={styles.filterItem} // Use default flex: 1
               activeDropdownId={activeDropdownId}
               setActiveDropdownId={setActiveDropdownId}
             />

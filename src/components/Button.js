@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeights.medium,
   },
   buttonTextAlign: {
-    textAlign: 'left',
+    // textAlign: 'left', // Remove left alignment, default center is usually fine for buttons
   },
   smallText: {
     fontSize: theme.typography.fontSizes.sm,
